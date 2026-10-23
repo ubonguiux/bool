@@ -1,0 +1,46 @@
+import { useState } from 'react';
+import { ArrowRight, ArrowUpRight, BadgeCheck, BatteryCharging, Bot, Check, ChevronDown, CircleHelp, ClipboardCheck, Cpu, Menu, Search, ShieldCheck, Smartphone, Sparkles, Store, Wrench, X } from 'lucide-react';
+
+const services = [
+  { title: 'Check a phone', detail: 'Understand a device before you buy, sell or swap it.', icon: ShieldCheck, tag: 'DEVICE TRUST' },
+  { title: 'Find a technician', detail: 'Connect with repair professionals and track the job.', icon: Wrench, tag: 'REPAIR & SERVICE' },
+  { title: 'Explore the market', detail: 'Browse phones, accessories and local dealer offers.', icon: Store, tag: 'MARKETPLACE' },
+  { title: 'Ask Bool AI', detail: 'Get guided troubleshooting and practical device support.', icon: Bot, tag: 'AI ASSISTANT' },
+];
+
+function Brand({ light = false }: { light?: boolean }) {
+  return <a className={`brand ${light ? 'brand-light' : ''}`} href="#" aria-label="Bool home">
+    <svg viewBox="0 0 44 44" className="brand-mark" role="img" aria-label="Bool abstract logo">
+      <defs><linearGradient id="boolGradient" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#D6FF79"/><stop offset="1" stopColor="#86D94B"/></linearGradient></defs>
+      <path d="M22 3.5 39.5 13.7v16.6L22 40.5 4.5 30.3V13.7L22 3.5Z" fill="url(#boolGradient)"/>
+      <path d="M17 12.5h6.8a7.2 7.2 0 0 1 5.4 12 7.1 7.1 0 0 1-5.4 12H17V12.5Z" fill="#10131C"/>
+      <path d="M17 19h6.1a3.4 3.4 0 1 1 0 6.8H17V19Zm0 11h6.5a3.4 3.4 0 1 1 0 6.8H17V30Z" fill="#D6FF79"/>
+      <circle cx="13" cy="22" r="2.4" fill="#10131C"/><circle cx="13" cy="33" r="2.4" fill="#10131C"/>
+    </svg><span>bool<span className="brand-dot">.</span></span>
+  </a>;
+}
+
+export default function App() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [active, setActive] = useState('All services');
+  const [query, setQuery] = useState('');
+  const [notice, setNotice] = useState('');
+  const filtered = services.filter(s => (active === 'All services' || s.tag.toLowerCase().includes(active.toLowerCase().split(' ')[0])) && (s.title + s.detail + s.tag).toLowerCase().includes(query.toLowerCase()));
+  const choose = (title: string) => setNotice(title + ' is in the Bool build roadmap. Live accounts and data will be enabled after the Supabase backend is connected.');
+  return <div className="app-shell">
+    <header className="topbar"><Brand/><nav className={menuOpen ? 'nav nav-open' : 'nav'}><a href="#services" onClick={() => setMenuOpen(false)}>Explore</a><a href="#how" onClick={() => setMenuOpen(false)}>How Bool works</a><a href="#trust" onClick={() => setMenuOpen(false)}>Trust & safety</a></nav><div className="top-actions"><button className="text-button" onClick={() => choose('Sign in')}>Sign in</button><button className="btn btn-dark btn-small" onClick={() => choose('Create account')}>Get started <ArrowUpRight size={15}/></button></div><button className="mobile-menu" aria-label="Toggle menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X/> : <Menu/>}</button></header>
+    <main>
+      <section className="hero"><div className="hero-glow glow-one"/><div className="hero-copy"><div className="eyebrow"><span className="pulse"/> BUILT FOR THE MOBILE WORLD <span className="eyebrow-line"/></div><h1>Every device has a story.<br/><span>Know yours.</span></h1><p className="hero-lede">Buy with confidence. Repair with clarity. Trade with trust. Bool brings the people and tools behind mobile technology into one smarter place.</p><div className="hero-ctas"><a className="btn btn-lime" href="#services">Explore Bool <ArrowRight size={17}/></a><a className="secondary-link" href="#how">See how it works ↗</a></div><div className="proof-row"><div className="proof-avatars"><span>U</span><span>T</span><span>D</span><b>+</b></div><div><strong>Made for real-world mobile needs</strong><small>For dealers, technicians and everyday users.</small></div></div></div>
+      <div className="hero-visual"><div className="orbit orbit-a"/><div className="orbit orbit-b"/><div className="phone-back"><i/><i/><i className="small-cam"/></div><div className="scan-ring"><div className="scan-core"><ShieldCheck size={43}/></div></div><div className="float-card verified-card"><div className="card-icon"><BadgeCheck size={20}/></div><div><strong>Device report</strong><span>Clear checks. Clear limits.</span></div><span className="mini-check"><Check size={13}/></span></div><div className="float-card ai-card"><div className="ai-spark"><Sparkles size={17}/></div><div><strong>Bool intelligence</strong><span>Helpful, not guesswork.</span></div></div><div className="visual-caption"><span className="caption-dot"/> TRUST STARTS WITH WHAT YOU CAN VERIFY</div></div>
+      <div className="hero-bottom"><span>01 / A BETTER WAY TO MOBILE</span><span>BUILT FOR PEOPLE WHO KEEP THE WORLD CONNECTED <ArrowUpRight size={13}/></span></div></section>
+      <section className="services-section" id="services"><div className="section-head"><div><div className="eyebrow dark-eyebrow">ONE PLATFORM. MORE POSSIBILITIES.</div><h2>What do you need<br className="desktop-break"/> to get done?</h2></div><p>From your next phone purchase to a repair on your workbench, start with the right tools and people.</p></div>
+      <div className="service-tools"><div className="service-tabs">{['All services','Device trust','Repair & service','Marketplace'].map(tab => <button key={tab} className={active === tab ? 'tab active' : 'tab'} onClick={() => setActive(tab)}>{tab}</button>)}</div><label className="search-box"><Search size={17}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search Bool services" aria-label="Search Bool services"/><kbd>⌘ K</kbd></label></div>
+      <div className="service-grid">{filtered.map((service) => { const Icon = service.icon; return <button className="service-card" key={service.title} onClick={() => choose(service.title)}><div className="service-card-top"><span className="service-icon"><Icon size={21}/></span><ArrowUpRight className="card-arrow" size={19}/></div><span className="service-tag">{service.tag}</span><h3>{service.title}</h3><p>{service.detail}</p><span className="card-bottom">Explore service <ArrowRight size={15}/></span>{service.title === 'Ask Bool AI' && <span className="coming-pill">IN DEVELOPMENT</span>}</button> })}</div></section>
+      <section className="workbench" id="how"><div className="workbench-art"><div className="workbench-grid"/><div className="device-outline"><Smartphone size={94}/><div className="device-check"><Check size={19}/></div></div><div className="data-chip chip-top"><Cpu size={16}/> Diagnostics</div><div className="data-chip chip-bottom"><BatteryCharging size={16}/> Device health</div></div><div className="workbench-copy"><div className="eyebrow">FOR THE PEOPLE BEHIND THE REPAIR</div><h2>A better workbench.<br/><span>A better outcome.</span></h2><p>Technicians deserve more than scattered chats and handwritten notes. Bool is designed to bring repair jobs, customer approvals, diagnostics, parts and updates into one organised workflow.</p><ul><li><Check size={16}/> Job cards and repair status</li><li><Check size={16}/> Quotes, approvals and customer updates</li><li><Check size={16}/> Device history and parts tracking</li></ul><button className="btn btn-lime" onClick={() => choose('Technician Workbench')}>Explore technician tools <ArrowRight size={16}/></button></div></section>
+      <section className="trust-section" id="trust"><div className="trust-icon"><ClipboardCheck size={27}/></div><div><div className="eyebrow dark-eyebrow">TRUST, BY DESIGN</div><h2>Evidence over assumptions.</h2><p>Bool will distinguish confirmed checks from AI suggestions and user-provided information. A report should tell you what was checked, when it was checked, and what still needs a human inspection.</p></div><div className="trust-points"><span><Check size={15}/> Transparent verification limits</span><span><Check size={15}/> Private customer information</span><span><Check size={15}/> Human approval for sensitive actions</span></div></section>
+      <section className="closing-cta"><div><div className="eyebrow">THE MOBILE WORLD, CONNECTED</div><h2>Make your next move<br/>a more informed one.</h2></div><a href="#services" className="btn btn-lime">Find your starting point <ArrowRight size={16}/></a><div className="closing-orb"/></section>
+    </main>
+    <footer><div className="footer-main"><Brand light/><p>Clarity for every device.<br/>Tools for everyone who keeps them working.</p><div className="footer-links"><a href="#services">Explore</a><a href="#trust">Trust & safety</a><a href="https://github.com/ubonguiux/bool" target="_blank" rel="noreferrer">GitHub <ArrowUpRight size={13}/></a></div></div><div className="footer-bottom"><span>© {new Date().getFullYear()} Bool. An initiative by RealTreats Technologies.</span><span><CircleHelp size={13}/> Built for people, not just devices.</span></div></footer>
+    {notice && <div className="toast" role="status"><Sparkles size={18}/><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Dismiss"><X size={16}/></button></div>}<button className="help-fab" aria-label="Bool help" onClick={() => choose('Bool help')}><CircleHelp size={20}/><span>Need a hand?</span><ChevronDown size={14}/></button>
+  </div>;
+}
