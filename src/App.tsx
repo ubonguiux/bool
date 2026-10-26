@@ -80,7 +80,7 @@ export default function App() {
     event.preventDefault(); setAuthBusy(true); setAuthMessage('');
     try {
       if (authMode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email: authEmail.trim(), password: authPassword, options: { data: { display_name: authName.trim() } } });
+        const { data, error } = await supabase.auth.signUp({ email: authEmail.trim(), password: authPassword, options: { data: { display_name: authName.trim() }, emailRedirectTo: window.location.origin } });
         if (error) throw error;
         if (!data.session) setAuthMessage('Your account request is ready. Check your email for a confirmation link, then return here to sign in.');
         else { setAuthMessage('Your Bool account has been created.'); setAuthOpen(false); }
