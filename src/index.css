@@ -230,3 +230,7 @@
 .provider-picker-selected small{font-size:11px;color:#737b6d;line-height:1.5}
 .provider-picker-selected .btn{flex-shrink:0}
 @media(max-width:600px){.provider-picker{padding:15px}.provider-picker-fields{grid-template-columns:1fr;gap:12px}.provider-picker-selected{align-items:stretch;flex-direction:column}.provider-picker-selected .btn{width:100%}}
+
+.nav-link-button{display:inline-flex;align-items:center;gap:5px;padding:0;border:0;background:transparent;color:#555b64;font-size:13px;white-space:nowrap;transition:color .2s}
+.nav-link-button:hover{color:#6c9e31}
+@media(max-width:900px){.nav-link-button{font-size:14px;padding:10px 0}}
