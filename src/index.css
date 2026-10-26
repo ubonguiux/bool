@@ -263,3 +263,5 @@
 .catalog-spin{animation:catalog-spin 1s linear infinite}
 @keyframes catalog-spin{to{transform:rotate(360deg)}}
 @media(max-width:600px){.catalog-image-controls{grid-template-columns:1fr}.catalog-image-search{flex-direction:column}.catalog-image-search .btn{justify-content:center}.catalog-image-results{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.showcase-image-credit{display:block;font-size:10px;line-height:1.5;color:#737b6c;margin:0 0 9px;overflow-wrap:anywhere}.showcase-image-credit a{text-decoration:underline;color:#4f7535}
