@@ -1,0 +1,24 @@
+import { useEffect, useState } from 'react';
+import { ArrowUpRight, BadgeCheck, Star } from 'lucide-react';
+import { supabase } from './lib/supabase';
+
+type Device={id:string;title:string;brand:string;model:string;price_ngn:number;condition:string;description:string;features:unknown;image_urls:unknown;stock_status:string;featured:boolean};
+type Testimonial={id:string;customer_name:string;customer_title:string;quote:string;image_url:string;rating:number;related_service:string;featured:boolean};
+type Partner={id:string;name:string;description:string;logo_url:string;website_url:string;partner_type:string};
+const arr=(v:unknown):string[]=>Array.isArray(v)?v.map(String):[];
+
+export default function PublicShowcase(){
+ const [devices,setDevices]=useState<Device[]>([]);
+ const [testimonials,setTestimonials]=useState<Testimonial[]>([]);
+ const [partners,setPartners]=useState<Partner[]>([]);
+ useEffect(()=>{let live=true;Promise.all([
+  supabase.from('bool_devices').select('id,title,brand,model,price_ngn,condition,description,features,image_urls,stock_status,featured').eq('status','published').order('featured',{ascending:false}).order('created_at',{ascending:false}).limit(8),
+  supabase.from('bool_testimonials').select('id,customer_name,customer_title,quote,image_url,rating,related_service,featured').eq('status','published').eq('consent_confirmed',true).order('featured',{ascending:false}).limit(6),
+  supabase.from('bool_partners').select('id,name,description,logo_url,website_url,partner_type').eq('status','published').order('sort_order').limit(12)
+ ]).then(([d,t,p])=>{if(live){setDevices(d.data??[]);setTestimonials(t.data??[]);setPartners(p.data??[]);}});return()=>{live=false;}},[]);
+ return <div className="public-showcase">
+ {devices.length>0&&<section className="showcase-section" id="devices"><div className="showcase-heading"><div><div className="eyebrow dark-eyebrow">DEVICE SPOTLIGHT</div><h2>Explore devices with<br/>clear details and prices.</h2></div><p>See the listed condition, features and availability before you enquire. Confirm final stock and price with Bool before making payment.</p></div><div className="showcase-device-grid">{devices.map(d=>{const images=arr(d.image_urls);const features=arr(d.features);return <article className="showcase-device" key={d.id}>{images[0]?<img className="showcase-device-image" src={images[0]} alt={d.title} loading="lazy"/>:<div className="showcase-device-placeholder"><span>{d.brand||'BOOL'}</span></div>}<div className="showcase-device-body"><span className="showcase-pill">{d.condition} · {d.stock_status.replace('_',' ')}</span><h3>{d.title}</h3><strong className="showcase-price">₦{Number(d.price_ngn).toLocaleString('en-NG')}</strong><p>{d.description}</p>{features.length>0&&<ul>{features.slice(0,4).map(f=><li key={f}>{f}</li>)}</ul>}<a href="#support">Ask Bool about this device <ArrowUpRight size={14}/></a></div></article>})}</div></section>}
+ {testimonials.length>0&&<section className="showcase-section testimonials-section"><div className="showcase-heading"><div><div className="eyebrow dark-eyebrow">REAL CUSTOMER EXPERIENCES</div><h2>Trust should be earned,<br/>not just promised.</h2></div><p>Testimonials are displayed only after publication and a consent confirmation by the platform administrator.</p></div><div className="showcase-testimonial-grid">{testimonials.map(t=><article className="showcase-testimonial" key={t.id}><div className="showcase-stars">{Array.from({length:t.rating},(_,i)=><Star key={i} size={14} fill="currentColor"/>)}</div><blockquote>“{t.quote}”</blockquote><div className="showcase-person">{t.image_url?<img src={t.image_url} alt="" loading="lazy"/>:<span>{t.customer_name.slice(0,1).toUpperCase()}</span>}<div><strong>{t.customer_name}</strong><small>{[t.customer_title,t.related_service].filter(Boolean).join(' · ')}</small></div><BadgeCheck size={17}/></div></article>)}</div></section>}
+ {partners.length>0&&<section className="showcase-section partners-section"><div className="showcase-heading"><div><div className="eyebrow dark-eyebrow">OUR NETWORK</div><h2>Working with the right people.</h2></div><p>Only approved partner records published by RealTreats Technologies appear here.</p></div><div className="showcase-partner-grid">{partners.map(p=><a className="showcase-partner" key={p.id} href={p.website_url||'#partners'} target={p.website_url?'_blank':undefined} rel={p.website_url?'noreferrer':undefined}>{p.logo_url?<img src={p.logo_url} alt={p.name} loading="lazy"/>:<span className="showcase-partner-monogram">{p.name.slice(0,1).toUpperCase()}</span>}<div><strong>{p.name}</strong><small>{p.description||p.partner_type}</small></div>{p.website_url&&<ArrowUpRight size={14}/>}</a>)}</div></section>}
+ </div>
+}
