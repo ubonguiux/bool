@@ -11,7 +11,7 @@ BEGIN
    ELSIF NEW.status='disputed' AND OLD.status IS DISTINCT FROM 'disputed' THEN
      IF NOT EXISTS (SELECT 1 FROM public.service_disputes d WHERE d.payment_id=NEW.id AND d.status NOT IN ('resolved','rejected')) THEN RAISE EXCEPTION 'An unresolved customer dispute is required'; END IF;
    ELSIF NEW.status='refund_requested' AND OLD.status IS DISTINCT FROM 'refund_requested' THEN
-     IF OLD.status NOT IN ('confirmed','disputed','allocated_to_provider') THEN RAISE EXCEPTION 'Refund requests require a confirmed, disputed, or paid-out transaction'; END IF;
+     IF OLD.status NOT IN ('confirmed','disputed') THEN RAISE EXCEPTION 'Refund requests require a confirmed, disputed, or paid-out transaction'; END IF;
    ELSIF NEW.status='cancelled' AND OLD.status IS DISTINCT FROM 'cancelled' THEN
      IF OLD.status NOT IN ('awaiting_transfer','submitted_for_review') THEN RAISE EXCEPTION 'Only unpaid or unconfirmed payment records can be cancelled'; END IF;
    ELSIF NEW.status='allocated_to_provider' AND OLD.status IS DISTINCT FROM 'allocated_to_provider' THEN
