@@ -1,4 +1,4 @@
-import { Fragment, ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 
 function inline(text:string):ReactNode[]{
  const parts:ReactNode[]=[];
