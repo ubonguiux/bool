@@ -8,10 +8,10 @@ import CustomerHub from './CustomerHub';
 import AdminOperations from './AdminOperations';
 
 const services = [
-  { title: 'Check a phone', detail: 'Understand a device before you buy, sell or swap it.', icon: ShieldCheck, tag: 'DEVICE TRUST' },
-  { title: 'Find a technician', detail: 'Connect with repair professionals and track the job.', icon: Wrench, tag: 'REPAIR & SERVICE' },
-  { title: 'Explore the market', detail: 'Browse phones, accessories and local dealer offers.', icon: Store, tag: 'MARKETPLACE' },
-  { title: 'Ask Bool AI', detail: 'Get guided troubleshooting and practical device support.', icon: Bot, tag: 'AI ASSISTANT' },
+  { title: 'Find a technician', detail: 'Request service from a provider approved by RealTreats Technologies.', icon: Wrench, tag: 'REPAIR & SERVICE' },
+  { title: 'Find a business', detail: 'Discover reviewed technology businesses, dealers and repair shops.', icon: Store, tag: 'VERIFIED NETWORK' },
+  { title: 'Explore devices', detail: 'Compare device images, prices, condition, specifications and features.', icon: Smartphone, tag: 'DEVICES & PRICES' },
+  { title: 'Contact RealTreats', detail: 'Ask a question, follow up on a request, or raise a complaint.', icon: CircleHelp, tag: 'CUSTOMER SUPPORT' },
 ];
 
 function Brand({ light = false }: { light?: boolean }) {
