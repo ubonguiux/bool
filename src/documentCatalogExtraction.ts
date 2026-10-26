@@ -50,13 +50,14 @@ function rowsFromText(text: string): CatalogRow[] {
     if (data.length) return data.map(values => Object.fromEntries(headers.map((header, index) => [header, values[index] || ''])));
   }
   const pricePattern = /(?:₦|NGN\s*)?\d[\d,]*(?:\.\d{1,2})?(?:\s*(?:NGN|naira))?\s*$/i;
-  const parsed = lines.map(line => {
+  const parsed: CatalogRow[] = [];
+  for (const line of lines) {
     const match = line.match(pricePattern);
-    if (!match) return null;
+    if (!match) continue;
     const price = match[0].replace(/\s*(?:NGN|naira)$/i, '').trim();
     const product = line.slice(0, match.index).replace(/[|:–—-]+\s*$/, '').trim();
-    return product ? { 'Product Name': product, Price: price } : null;
-  }).filter((row): row is CatalogRow => row !== null);
+    if (product) parsed.push({ 'Product Name': product, Price: price });
+  }
   return parsed;
 }
 
@@ -127,7 +128,7 @@ export async function extractCatalogRows(file: File): Promise<CatalogRow[]> {
         canvas.height = Math.ceil(viewport.height);
         const context = canvas.getContext('2d');
         if (!context) continue;
-        await page.render({ canvas, canvasContext: context, viewport }).promise;
+        await page.render({ canvasContext: context, viewport }).promise;
         const result = await worker.recognize(canvas);
         ocrTexts.push(result.data.text || '');
         canvas.width = 0;
