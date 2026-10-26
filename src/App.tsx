@@ -94,7 +94,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const match = window.location.pathname.match(/^\\/pages\\/([^/]+)\\/?$/);
+    const match = window.location.pathname.match(/^\/pages\/([^/]+)\/?$/);
     if (!match) return;
     setPublicPageRoute(true);
     const slug = decodeURIComponent(match[1]);
