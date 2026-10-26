@@ -23,9 +23,10 @@ export default function AdminOperations({onNotice}:{onNotice:(message:string)=>v
   const [p,r,pay,t,d,n]=await Promise.all([
    supabase.from('bool_providers').select('id,user_id,provider_type,public_name,slug,bio,service_categories,service_areas,contact_public,business_address,verification_status,status,created_at').order('created_at',{ascending:false}).limit(200),
    supabase.from('provider_service_requests').select('id,customer_id,provider_id,subject,description,status,quote_ngn,quote_details,created_at').order('created_at',{ascending:false}).limit(200),
-   supabase.from('service_payments').select('id,customer_id,service_request_id,repair_job_id,provider_id,amount_ngn,payment_method,transfer_reference,status,admin_note_private,created_at').order('created_at',{ascending:false}).limit(200),
+   supabase.from('service_payments').select('id,customer_id,service_request_id,repair_job_id,provider_id,amount_ngn,payment_method,transfer_reference,status,created_at').order('created_at',{ascending:false}).limit(200),
    supabase.from('support_tickets').select('id,customer_id,subject,category,request_reference,status,priority,resolution_summary,created_at').order('created_at',{ascending:false}).limit(200),
-   supabase.from('service_disputes').select('id,customer_id,payment_id,repair_job_id,provider_id,subject,description,requested_resolution,status,resolution_summary,created_at').order('created_at',{ascending:false}).limit(200)
+   supabase.from('service_disputes').select('id,customer_id,payment_id,repair_job_id,provider_id,subject,description,requested_resolution,status,resolution_summary,created_at').order('created_at',{ascending:false}).limit(200),
+   supabase.from('service_payment_private_notes').select('payment_id,notes,updated_at').order('updated_at',{ascending:false}).limit(200)
   ]);
   const errors=[p.error,r.error,pay.error,t.error,d.error,n.error].filter(Boolean);
   if(errors.length)onNotice('Some operations records could not load. Check the Bool operations migration and admin access.');
