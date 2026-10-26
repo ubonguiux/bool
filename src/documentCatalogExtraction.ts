@@ -35,7 +35,8 @@ function parseDelimited(text: string): CatalogRow[] {
 function rowsFromText(text: string): CatalogRow[] {
   const cleaned = text.replace(/\u0000/g, '').replace(/\r/g, '');
   const firstLine = cleaned.split('\n').find(line => line.trim()) || '';
-  if (/[\\t,;|]/.test(firstLine)) {
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  if (firstLine.includes('\\t') || /[;|]/.test(firstLine) || commaCount >= 2) {
     const delimited = parseDelimited(cleaned);
     if (delimited.length) return delimited;
   }
