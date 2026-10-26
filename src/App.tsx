@@ -382,9 +382,12 @@ export default function App() {
     if (title === 'Check a phone') { setVerificationOpen(true); setNotice(''); return; }
     if (title === 'Sign in') { openAuth('signin'); return; }
     if (title === 'Create account') { openAuth('signup'); return; }
-    if (title === 'Find a technician' || title === 'Technician Workbench') { void openRepairPanel(); return; }
+    if (title === 'Find a technician' || title === 'Find a business' || title === 'Technician Workbench') { setCustomerHubTab('providers'); setNotice(''); return; }
+    if (title === 'Explore devices') { const target=document.getElementById('devices'); if(target) target.scrollIntoView({behavior:'smooth'}); else setNotice('Device listings will appear here when published by RealTreats Technologies.'); return; }
     if (title === 'Explore the market') { void openMarketplace(); return; }
-    setNotice(title + ' is being prepared. This preview does not yet connect to live service data.');
+    if (title === 'Contact RealTreats') { setCustomerHubTab('support'); setNotice(''); return; }
+    if (title === 'Payments & disputes') { setCustomerHubTab('payments'); setNotice(''); return; }
+    setNotice(title + ' is not available yet. Please contact RealTreats Technologies for help.');
   };
   const validImei = (value: string) => {
     const digits = value.replace(/\D/g, '');
