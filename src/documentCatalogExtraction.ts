@@ -99,8 +99,17 @@ export async function extractCatalogRows(file: File): Promise<CatalogRow[]> {
     for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++) {
       const page = await pdf.getPage(pageNo);
       const content = await page.getTextContent();
-      const line = content.items.map(item => ('str' in item ? item.str : '')).join(' ');
-      pageTexts.push(line);
+      const positioned = content.items
+        .filter((item): item is typeof item & { str: string; transform: number[] } => 'str' in item && Boolean(item.str.trim()) && 'transform' in item)
+        .map(item => ({ text: item.str.trim(), x: item.transform[4], y: item.transform[5] }))
+        .sort((a, b) => Math.abs(b.y - a.y) > 3 ? b.y - a.y : a.x - b.x);
+      const lines: { y: number; parts: { x: number; text: string }[] }[] = [];
+      for (const item of positioned) {
+        let line = lines.find(candidate => Math.abs(candidate.y - item.y) <= 3);
+        if (!line) { line = { y: item.y, parts: [] }; lines.push(line); }
+        line.parts.push({ x: item.x, text: item.text });
+      }
+      pageTexts.push(lines.map(line => line.parts.sort((a, b) => a.x - b.x).map(part => part.text).join('   ')).join('\\n'));
     }
     const extracted = rowsFromText(pageTexts.join('\n'));
     if (extracted.length) return extracted;
