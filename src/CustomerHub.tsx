@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, BadgeCheck, Building2, CircleHelp, CreditCard, MessageSquare, ShieldCheck, Wrench, X } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Building2, CircleHelp, CreditCard, MessageSquare, ShieldCheck, Wrench, X } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 type Tab='providers'|'support'|'payments';
@@ -9,7 +9,7 @@ type Ticket={id:string;subject:string;category:string;request_reference:string;s
 type TicketMessage={id:string;ticket_id:string;author_id:string;body:string;created_at:string};
 type Payment={id:string;service_request_id:string|null;repair_job_id:string|null;amount_ngn:number;transfer_reference:string;status:string;created_at:string};
 const values=(v:unknown)=>Array.isArray(v)?v.map(String):[];
-const statusLabel=(v:string)=>v.replaceAll('_',' ');
+const statusLabel=(v:string)=>v.replace(/_/g,' ');
 const accountNumber='6263388058';
 
 export default function CustomerHub({initialTab='providers',userId,onClose,onNotice,onRequireAuth}:{initialTab?:Tab;userId?:string;onClose:()=>void;onNotice:(message:string)=>void;onRequireAuth:()=>void}){
