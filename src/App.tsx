@@ -108,7 +108,7 @@ export default function App() {
     const { error } = await supabase.from('device_checks').insert({
       user_id: session.user.id, device_model: deviceModel.trim(),
       imei_last4: digits.length >= 4 ? digits.slice(-4) : null,
-      imei_checksum_valid: validImei(imei), observed_tests: checkedTests, official_check_status: 'not_checked',
+      imei_checksum_valid: validImei(imei), observed_tests: checkedTests,
     });
     setSavingReport(false);
     if (error) { setNotice('We could not save this report. Please check your connection and try again.'); return; }
