@@ -3,7 +3,7 @@ import { BadgeCheck, CreditCard, MessageSquare, ShieldCheck, Wrench } from 'luci
 import { supabase } from './lib/supabase';
 
 type Tab='providers'|'requests'|'payments'|'support'|'disputes';
-const label=(v:string)=>v.replaceAll('_',' ');
+const label=(v:string)=>v.replace(/_/g,' ');
 export default function AdminOperations({onNotice}:{onNotice:(message:string)=>void}){
  const [tab,setTab]=useState<Tab>('providers');
  const [providers,setProviders]=useState<any[]>([]);
@@ -14,7 +14,6 @@ export default function AdminOperations({onNotice}:{onNotice:(message:string)=>v
  const [busy,setBusy]=useState(false);
  const [quotes,setQuotes]=useState<Record<string,string>>({});
  const [quoteDetails,setQuoteDetails]=useState<Record<string,string>>({});
- const [ticketMessages,setTicketMessages]=useState<Record<string,string>>({});
  const [resolution,setResolution]=useState<Record<string,string>>({});
  const [paymentNotes,setPaymentNotes]=useState<Record<string,string>>({});
  const [reply,setReply]=useState<Record<string,string>>({});
