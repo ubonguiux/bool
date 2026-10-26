@@ -39,7 +39,7 @@ export default function CustomerHub({initialTab='providers',userId,onClose,onNot
  const refresh=async()=>{
   const p=await supabase.from('bool_providers').select('id,provider_type,public_name,slug,bio,service_categories,service_areas,contact_public,business_address,portfolio_image_urls,verification_status,rating_average,rating_count').eq('status','approved').in('verification_status',['identity_checked','business_checked','skills_assessed','verified']).order('rating_average',{ascending:false}).limit(100);
   setProviders(p.data??[]);
-  if(!userId)return;
+  if(!userId){setMyApplications([]);setRequests([]);setTickets([]);setPayments([]);setDisputes([]);return;}
   const mine=await supabase.from('bool_providers').select('id,public_name,provider_type,status,verification_status,created_at').eq('user_id',userId).order('created_at',{ascending:false}).limit(20);
   setMyApplications(mine.data??[]);
   const [r,t,pay,ds]=await Promise.all([
