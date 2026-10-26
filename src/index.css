@@ -212,3 +212,5 @@
 .markdown-renderer a{color:#4e7532;text-decoration:underline;text-underline-offset:3px}
 .markdown-renderer hr{border:0;border-top:1px solid #e6eadf;margin:24px 0}
 .hub-signin{margin-top:12px;display:inline-flex;align-items:center;gap:8px}
+
+.public-cms-body{white-space:normal}
