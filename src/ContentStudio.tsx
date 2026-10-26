@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ImagePlus, MessageSquareQuote, Package, Handshake, Save, Pencil, Trash2 } from 'lucide-react';
+import { MessageSquareQuote, Package, Handshake, Save, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 type Device = {id:string;title:string;brand:string;model:string;category:string;price_ngn:number;condition:string;description:string;features:unknown;image_urls:unknown;seller_name:string;stock_status:string;status:string;featured:boolean};
