@@ -36,7 +36,7 @@ function rowsFromText(text: string): CatalogRow[] {
   const cleaned = text.replace(/\u0000/g, '').replace(/\r/g, '');
   const firstLine = cleaned.split('\n').find(line => line.trim()) || '';
   const commaCount = (firstLine.match(/,/g) || []).length;
-  if (firstLine.includes('\\t') || /[;|]/.test(firstLine) || commaCount >= 2) {
+  if (firstLine.includes('\t') || /[;|]/.test(firstLine) || commaCount >= 2) {
     const delimited = parseDelimited(cleaned);
     if (delimited.length) return delimited;
   }
@@ -112,7 +112,7 @@ export async function extractCatalogRows(file: File): Promise<CatalogRow[]> {
         if (!line) { line = { y: item.y, parts: [] }; lines.push(line); }
         line.parts.push({ x: item.x, text: item.text });
       }
-      pageTexts.push(lines.map(line => line.parts.sort((a, b) => a.x - b.x).map(part => part.text).join('   ')).join('\\n'));
+      pageTexts.push(lines.map(line => line.parts.sort((a, b) => a.x - b.x).map(part => part.text).join('   ')).join('\n'));
     }
     const extracted = rowsFromText(pageTexts.join('\n'));
     if (extracted.length) return extracted;
