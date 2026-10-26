@@ -56,7 +56,7 @@ function rowsFromText(text: string): CatalogRow[] {
     const price = match[0].replace(/\s*(?:NGN|naira)$/i, '').trim();
     const product = line.slice(0, match.index).replace(/[|:–—-]+\s*$/, '').trim();
     return product ? { 'Product Name': product, Price: price } : null;
-  }).filter((row): row is CatalogRow => Boolean(row));
+  }).filter((row): row is { 'Product Name': string; Price: string } => row !== null);
   return parsed;
 }
 
@@ -100,8 +100,11 @@ export async function extractCatalogRows(file: File): Promise<CatalogRow[]> {
       const page = await pdf.getPage(pageNo);
       const content = await page.getTextContent();
       const positioned = content.items
-        .filter((item): item is typeof item & { str: string; transform: number[] } => 'str' in item && Boolean(item.str.trim()) && 'transform' in item)
-        .map(item => ({ text: item.str.trim(), x: item.transform[4], y: item.transform[5] }))
+        .filter(item => 'str' in item && Boolean(item.str.trim()) && 'transform' in item)
+        .map(item => {
+          const positionedItem = item as { str: string; transform: number[] };
+          return { text: positionedItem.str.trim(), x: positionedItem.transform[4], y: positionedItem.transform[5] };
+        })
         .sort((a, b) => Math.abs(b.y - a.y) > 3 ? b.y - a.y : a.x - b.x);
       const lines: { y: number; parts: { x: number; text: string }[] }[] = [];
       for (const item of positioned) {
