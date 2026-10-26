@@ -34,8 +34,11 @@ function parseDelimited(text: string): CatalogRow[] {
 
 function rowsFromText(text: string): CatalogRow[] {
   const cleaned = text.replace(/\u0000/g, '').replace(/\r/g, '');
-  const delimited = parseDelimited(cleaned);
-  if (delimited.length) return delimited;
+  const firstLine = cleaned.split('\n').find(line => line.trim()) || '';
+  if (/[\\t,;|]/.test(firstLine)) {
+    const delimited = parseDelimited(cleaned);
+    if (delimited.length) return delimited;
+  }
   const lines = cleaned.split('\n').map(line => line.trim()).filter(Boolean);
   if (lines.length < 2) return [];
   const splitLines = lines.map(line => line.split(/\t+|\s{2,}/).map(value => value.trim()).filter(Boolean));
