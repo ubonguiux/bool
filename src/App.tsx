@@ -78,6 +78,8 @@ export default function App() {
   const [announcementBusy, setAnnouncementBusy] = useState(false);
   const [publicPageRoute, setPublicPageRoute] = useState(false);
   const [publicPage, setPublicPage] = useState<{title:string;slug:string;excerpt:string;body_markdown:string;category:string;seo_title:string;seo_description:string;published_at:string|null}|null>(null);
+  const [liveAnnouncement, setLiveAnnouncement] = useState<{id:string;title:string;message:string}|null>(null);
+  const [announcementDismissed, setAnnouncementDismissed] = useState(false);
   const [adminBusy, setAdminBusy] = useState(false);
   const [adminProfiles, setAdminProfiles] = useState<Array<{ id: string; display_name: string; role: string; created_at: string }>>([]);
   const [adminChecks, setAdminChecks] = useState<Array<{ id: string; user_id: string; device_model: string; imei_last4: string | null; official_check_status: string; created_at: string }>>([]);
@@ -91,6 +93,10 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => { if (mounted) setSession(data.session); });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
     return () => { mounted = false; subscription.unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    supabase.from('cms_announcements').select('id,title,message').eq('status','published').eq('audience','all').order('created_at',{ascending:false}).limit(1).maybeSingle().then(({data}) => setLiveAnnouncement(data ?? null));
   }, []);
 
   useEffect(() => {
@@ -352,7 +358,7 @@ export default function App() {
   };
   const deviceTests = ['Screen and touch response', 'Cameras and flash', 'Speaker and microphone', 'Buttons and vibration', 'Charging port and cable', 'Wi-Fi, Bluetooth and cellular signal', 'Face ID / fingerprint sensor (where available)'];
   if (publicPageRoute) return <div className="public-cms-page"><header><Brand/><a href="/" className="btn btn-dark btn-small">Back to Bool</a></header>{publicPage ? <article><div className="eyebrow dark-eyebrow">{publicPage.category || 'BOOL GUIDE'}</div><h1>{publicPage.title}</h1>{publicPage.excerpt && <p className="public-cms-excerpt">{publicPage.excerpt}</p>}<div className="public-cms-body">{publicPage.body_markdown}</div><small>Published {publicPage.published_at ? new Date(publicPage.published_at).toLocaleDateString() : ''}</small></article> : <article><h1>Page not found</h1><p>This page may be unpublished or the link may have changed.</p><a href="/">Return to Bool</a></article>}</div>;
-  return <div className="app-shell">
+  return <div className="app-shell">{liveAnnouncement && !announcementDismissed && <div className="live-announcement"><div><strong>{liveAnnouncement.title}</strong><span>{liveAnnouncement.message}</span></div><button onClick={() => setAnnouncementDismissed(true)} aria-label="Dismiss announcement"><X size={15}/></button></div>
     <header className="topbar"><Brand/><nav className={menuOpen ? 'nav nav-open' : 'nav'}><a href="#services" onClick={() => setMenuOpen(false)}>Explore</a><a href="#how" onClick={() => setMenuOpen(false)}>How Bool works</a><a href="#trust" onClick={() => setMenuOpen(false)}>Trust & safety</a></nav><div className="top-actions">{session ? <>{profile?.role === 'admin' && <button className="btn btn-lime btn-small" onClick={() => void openAdminConsole()}><ShieldCheck size={14}/> Admin console</button>}<button className="text-button" onClick={() => setHelpOpen(true)}>{profile?.display_name || session.user.email || 'My Bool'}</button><button className="btn btn-dark btn-small" onClick={signOut}>Sign out</button></> : <><button className="text-button" onClick={() => choose('Sign in')}>Sign in</button><button className="btn btn-dark btn-small" onClick={() => choose('Create account')}>Get started <ArrowUpRight size={15}/></button></>}</div><button className="mobile-menu" aria-label="Toggle menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X/> : <Menu/>}</button></header>
     <main>
       <section className="hero"><div className="hero-glow glow-one"/><div className="hero-copy"><div className="eyebrow"><span className="pulse"/> BUILT FOR THE MOBILE WORLD <span className="eyebrow-line"/></div><h1>Every device has a story.<br/><span>Know yours.</span></h1><p className="hero-lede">Buy with confidence. Repair with clarity. Trade with trust. Bool brings the people and tools behind mobile technology into one smarter place.</p><div className="hero-ctas"><a className="btn btn-lime" href="#services">Explore Bool <ArrowRight size={17}/></a><a className="secondary-link" href="#how">See how it works ↗</a></div><div className="proof-row"><div className="proof-avatars"><span>U</span><span>T</span><span>D</span><b>+</b></div><div><strong>Made for real-world mobile needs</strong><small>For dealers, technicians and everyday users.</small></div></div></div>
