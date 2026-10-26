@@ -15,7 +15,8 @@ export default function AdminOperations({onNotice}:{onNotice:(message:string)=>v
  const [quotes,setQuotes]=useState<Record<string,string>>({});
  const [quoteDetails,setQuoteDetails]=useState<Record<string,string>>({});
  const [ticketMessages,setTicketMessages]=useState<Record<string,string>>({});
- const [resolution,setResolution]=useState<Record<string,string>>({});\n const [paymentNotes,setPaymentNotes]=useState<Record<string,string>>({});
+ const [resolution,setResolution]=useState<Record<string,string>>({});
+ const [paymentNotes,setPaymentNotes]=useState<Record<string,string>>({});
  const [reply,setReply]=useState<Record<string,string>>({});
  const [messages,setMessages]=useState<Record<string,any[]>>({});
  const refresh=async()=>{
@@ -33,7 +34,8 @@ export default function AdminOperations({onNotice}:{onNotice:(message:string)=>v
  useEffect(()=>{void refresh();},[]);
  const update=async(table:string,id:string,payload:Record<string,unknown>,success:string)=>{setBusy(true);const {error}=await supabase.from(table as any).update(payload as any).eq('id',id);setBusy(false);if(error){onNotice('Change could not be saved. Check the selected status and permissions.');return;}onNotice(success);await refresh();};
  const setProvider=async(p:any,field:'status'|'verification_status',value:string)=>update('bool_providers',p.id,{[field]:value,updated_at:new Date().toISOString()},'Provider record updated.');
- const setPaymentStatus=async(p:any,next:string)=>{const payload:Record<string,unknown>={status:next,updated_at:new Date().toISOString()};await update('service_payments',p.id,payload,'Payment status updated.');};\n const savePaymentNote=async(p:any)=>{const user=(await supabase.auth.getUser()).data.user;setBusy(true);const {error}=await supabase.from('service_payment_private_notes').upsert({payment_id:p.id,notes:paymentNotes[p.id]??'',updated_by:user?.id??null,updated_at:new Date().toISOString()},{onConflict:'payment_id'});setBusy(false);if(error){onNotice('Private payment note could not be saved.');return;}onNotice('Private payment note saved.');};
+ const setPaymentStatus=async(p:any,next:string)=>{const payload:Record<string,unknown>={status:next,updated_at:new Date().toISOString()};await update('service_payments',p.id,payload,'Payment status updated.');};
+ const savePaymentNote=async(p:any)=>{const user=(await supabase.auth.getUser()).data.user;setBusy(true);const {error}=await supabase.from('service_payment_private_notes').upsert({payment_id:p.id,notes:paymentNotes[p.id]??'',updated_by:user?.id??null,updated_at:new Date().toISOString()},{onConflict:'payment_id'});setBusy(false);if(error){onNotice('Private payment note could not be saved.');return;}onNotice('Private payment note saved.');};
  const saveQuote=async(r:any)=>{const amount=Number(quotes[r.id]);if(!Number.isFinite(amount)||amount<=0){onNotice('Enter a quote greater than zero.');return;}await update('provider_service_requests',r.id,{quote_ngn:amount,quote_details:(quoteDetails[r.id]||'').trim(),status:'quoted',updated_at:new Date().toISOString()},'Quote saved and request marked quoted.');};
  const replyTicket=async(t:any)=>{const body=(reply[t.id]||'').trim();if(!body){onNotice('Write a reply first.');return;}setBusy(true);const {error}=await supabase.from('support_messages').insert({ticket_id:t.id,author_id:(await supabase.auth.getUser()).data.user?.id,body,staff_only:false});setBusy(false);if(error){onNotice('Reply could not be sent.');return;}setReply(v=>({...v,[t.id]:''}));await update('support_tickets',t.id,{status:'in_progress',updated_at:new Date().toISOString()},'Customer reply sent.');};
  const loadMessages=async(id:string)=>{const {data,error}=await supabase.from('support_messages').select('id,author_id,body,staff_only,created_at').eq('ticket_id',id).order('created_at');if(error){onNotice('Ticket messages could not load.');return;}setMessages(v=>({...v,[id]:data??[]}));};
