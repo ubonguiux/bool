@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from './lib/supabase';
 import { ArrowRight, ArrowUpRight, BadgeCheck, BatteryCharging, Bot, Check, ChevronDown, CircleHelp, ClipboardCheck, Cpu, Menu, Search, ShieldCheck, Smartphone, Sparkles, Store, Wrench, X } from 'lucide-react';
 
 const services = [
@@ -31,6 +33,90 @@ export default function App() {
   const [deviceModel, setDeviceModel] = useState('');
   const [checkedTests, setCheckedTests] = useState<string[]>([]);
   const [verificationMessage, setVerificationMessage] = useState('');
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authMessage, setAuthMessage] = useState('');
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<{ display_name: string; role: string } | null>(null);
+  const [savedChecks, setSavedChecks] = useState<Array<{ id: string; device_model: string; imei_last4: string | null; created_at: string; observed_tests: string[] }>>([]);
+  const [savingReport, setSavingReport] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => { if (mounted) setSession(data.session); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
+    return () => { mounted = false; subscription.unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user) { setProfile(null); setSavedChecks([]); return; }
+    let cancelled = false;
+    const loadAccount = async () => {
+      const user = session.user;
+      const { data: existingProfile } = await supabase.from('profiles').select('display_name, role').eq('id', user.id).maybeSingle();
+      let currentProfile = existingProfile;
+      if (!currentProfile) {
+        const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'Bool user';
+        const { data: createdProfile, error } = await supabase.from('profiles').upsert({ id: user.id, display_name: displayName }, { onConflict: 'id' }).select('display_name, role').single();
+        if (error) { if (!cancelled) setNotice('Your account is signed in, but your profile could not be prepared. Please try again.'); }
+        else currentProfile = createdProfile;
+      }
+      const { data: checks } = await supabase.from('device_checks').select('id, device_model, imei_last4, created_at, observed_tests').order('created_at', { ascending: false }).limit(10);
+      if (!cancelled) { setProfile(currentProfile); setSavedChecks(checks ?? []); }
+    };
+    void loadAccount();
+    return () => { cancelled = true; };
+  }, [session?.user?.id]);
+
+  const openAuth = (mode: 'signin' | 'signup') => {
+    setAuthMode(mode); setAuthMessage(''); setAuthPassword(''); setAuthOpen(true);
+  };
+
+  const submitAuth = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setAuthBusy(true); setAuthMessage('');
+    try {
+      if (authMode === 'signup') {
+        const { data, error } = await supabase.auth.signUp({ email: authEmail.trim(), password: authPassword, options: { data: { display_name: authName.trim() } } });
+        if (error) throw error;
+        if (!data.session) setAuthMessage('Your account request is ready. Check your email for a confirmation link, then return here to sign in.');
+        else { setAuthMessage('Your Bool account has been created.'); setAuthOpen(false); }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email: authEmail.trim(), password: authPassword });
+        if (error) throw error;
+        setAuthOpen(false); setNotice('You are signed in to Bool.');
+      }
+    } catch (error) {
+      setAuthMessage(error instanceof Error ? error.message : 'We could not complete that request. Please try again.');
+    } finally { setAuthBusy(false); }
+  };
+
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) setNotice('Could not sign out. Please try again.');
+    else setNotice('You have signed out.');
+  };
+
+  const saveDeviceReport = async () => {
+    if (!session?.user) { setAuthMode('signin'); setAuthMessage('Sign in or create a Bool account to save your device-check report.'); setAuthOpen(true); return; }
+    if (!deviceModel.trim()) { setVerificationMessage('Enter the device make and model before saving this report.'); return; }
+    setSavingReport(true);
+    const digits = imei.replace(/\D/g, '');
+    const { error } = await supabase.from('device_checks').insert({
+      user_id: session.user.id, device_model: deviceModel.trim(),
+      imei_last4: digits.length >= 4 ? digits.slice(-4) : null,
+      imei_checksum_valid: validImei(imei), observed_tests: checkedTests, official_check_status: 'not_checked',
+    });
+    setSavingReport(false);
+    if (error) { setNotice('We could not save this report. Please check your connection and try again.'); return; }
+    const { data: checks } = await supabase.from('device_checks').select('id, device_model, imei_last4, created_at, observed_tests').order('created_at', { ascending: false }).limit(10);
+    setSavedChecks(checks ?? []);
+    setNotice('Device-check report saved to your private Bool account. The full IMEI was not stored.');
+  };
+
   const filtered = services.filter(s => (active === 'All services' || s.tag.toLowerCase().includes(active.toLowerCase().split(' ')[0])) && (s.title + s.detail + s.tag).toLowerCase().includes(query.toLowerCase()));
   const choose = (title: string) => {
     if (title === 'Check a phone') { setVerificationOpen(true); setNotice(''); return; }
