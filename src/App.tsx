@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
-import { ArrowRight, ArrowUpRight, BadgeCheck, BatteryCharging, Bot, Check, ChevronDown, CircleHelp, ClipboardCheck, Cpu, ImagePlus, Copy, Trash2, Menu, Search, ShieldCheck, Smartphone, Sparkles, Store, Wrench, X } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BadgeCheck, BatteryCharging, Check, ChevronDown, CircleHelp, ClipboardCheck, Cpu, ImagePlus, Copy, Trash2, Menu, Search, ShieldCheck, Smartphone, Sparkles, Store, Wrench, X } from 'lucide-react';
 import ContentStudio from './ContentStudio';
 import PublicShowcase from './PublicShowcase';
 import CustomerHub from './CustomerHub';
@@ -65,7 +65,7 @@ export default function App() {
 
   const [listingBusy, setListingBusy] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
-  const [adminTab, setAdminTab] = useState<'overview' | 'users' | 'devices' | 'repairs' | 'listings' | 'cms' | 'catalog' | 'media' | 'announcements' | 'settings' | 'audit'>('overview');
+  const [adminTab, setAdminTab] = useState<'overview' | 'users' | 'devices' | 'repairs' | 'listings' | 'operations' | 'cms' | 'catalog' | 'media' | 'announcements' | 'settings' | 'audit'>('overview');
   const [mediaFiles, setMediaFiles] = useState<Array<{name:string;id:string|null;updated_at:string|null;metadata?:{mimetype?:string;size?:number}|null}>>([]);
   const [mediaBusy, setMediaBusy] = useState(false);
   type CmsPage = { id: string; title: string; slug: string; excerpt: string; body_markdown: string; category: string; status: string; featured: boolean; seo_title: string; seo_description: string; updated_at: string };
@@ -181,18 +181,6 @@ export default function App() {
     setNotice('Device-check report saved to your private Bool account. The full IMEI was not stored.');
   };
 
-
-  const openRepairPanel = async () => {
-    if (!session?.user) {
-      setAuthMode('signin');
-      setAuthMessage('Sign in or create a Bool account to submit and track repair requests.');
-      setAuthOpen(true);
-      return;
-    }
-    setServicePanel('repair');
-    const { data } = await supabase.from('repair_jobs').select('id, device_model, issue_description, status, created_at').order('created_at', { ascending: false }).limit(10);
-    setRepairJobs(data ?? []);
-  };
 
   const submitRepairRequest = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
