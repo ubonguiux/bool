@@ -9,6 +9,7 @@ import AdminOperations from './AdminOperations';
 import MarkdownRenderer from './MarkdownRenderer';
 
 const services = [
+  { title: 'Check a phone', detail: 'Use a guided checklist and understand what Bool has and has not verified.', icon: ShieldCheck, tag: 'DEVICE TRUST' },
   { title: 'Find a technician', detail: 'Request service from a provider approved by RealTreats Technologies.', icon: Wrench, tag: 'REPAIR & SERVICE' },
   { title: 'Find a business', detail: 'Discover reviewed technology businesses, dealers and repair shops.', icon: Store, tag: 'VERIFIED NETWORK' },
   { title: 'Explore devices', detail: 'Compare device images, prices, condition, specifications and features.', icon: Smartphone, tag: 'DEVICES & PRICES' },
