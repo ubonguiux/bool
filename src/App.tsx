@@ -44,6 +44,19 @@ export default function App() {
   const [profile, setProfile] = useState<{ display_name: string; role: string } | null>(null);
   const [savedChecks, setSavedChecks] = useState<Array<{ id: string; device_model: string; imei_last4: string | null; created_at: string; observed_tests: string[] }>>([]);
   const [savingReport, setSavingReport] = useState(false);
+  const [servicePanel, setServicePanel] = useState<'repair' | 'marketplace' | null>(null);
+  const [repairModel, setRepairModel] = useState('');
+  const [repairIssue, setRepairIssue] = useState('');
+  const [repairBusy, setRepairBusy] = useState(false);
+  const [repairJobs, setRepairJobs] = useState<Array<{ id: string; device_model: string; issue_description: string; status: string; created_at: string }>>([]);
+  const [marketListings, setMarketListings] = useState<Array<{ id: string; title: string; category: string; description: string; price_ngn: number; condition: string; created_at: string }>>([]);
+  const [listingTitle, setListingTitle] = useState('');
+  const [listingCategory, setListingCategory] = useState('phone');
+  const [listingDescription, setListingDescription] = useState('');
+  const [listingPrice, setListingPrice] = useState('');
+  const [listingCondition, setListingCondition] = useState('used');
+  const [listingBusy, setListingBusy] = useState(false);
+
 
   useEffect(() => {
     let mounted = true;
@@ -115,6 +128,67 @@ export default function App() {
     const { data: checks } = await supabase.from('device_checks').select('id, device_model, imei_last4, created_at, observed_tests').order('created_at', { ascending: false }).limit(10);
     setSavedChecks(checks ?? []);
     setNotice('Device-check report saved to your private Bool account. The full IMEI was not stored.');
+  };
+
+
+  const openRepairPanel = async () => {
+    if (!session?.user) {
+      setAuthMode('signin');
+      setAuthMessage('Sign in or create a Bool account to submit and track repair requests.');
+      setAuthOpen(true);
+      return;
+    }
+    setServicePanel('repair');
+    const { data } = await supabase.from('repair_jobs').select('id, device_model, issue_description, status, created_at').order('created_at', { ascending: false }).limit(10);
+    setRepairJobs(data ?? []);
+  };
+
+  const submitRepairRequest = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!session?.user) return;
+    setRepairBusy(true);
+    const { data, error } = await supabase.from('repair_jobs').insert({
+      customer_id: session.user.id,
+      device_model: repairModel.trim(),
+      issue_description: repairIssue.trim(),
+    }).select('id, device_model, issue_description, status, created_at').single();
+    setRepairBusy(false);
+    if (error) { setNotice('We could not submit your repair request. Please try again.'); return; }
+    setRepairJobs(current => [data, ...current]);
+    setRepairModel('');
+    setRepairIssue('');
+    setNotice('Your repair request has been saved. Technician matching is not yet automated.');
+  };
+
+  const openMarketplace = async () => {
+    setServicePanel('marketplace');
+    const { data } = await supabase.from('listings').select('id, title, category, description, price_ngn, condition, created_at').eq('status', 'published').order('created_at', { ascending: false }).limit(30);
+    setMarketListings(data ?? []);
+  };
+
+  const submitListing = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!session?.user) {
+      setServicePanel(null);
+      setAuthMode('signin');
+      setAuthMessage('Sign in or create a Bool account to publish a marketplace listing.');
+      setAuthOpen(true);
+      return;
+    }
+    const price = Number(listingPrice);
+    if (!Number.isFinite(price) || price < 0) { setNotice('Enter a valid price in Nigerian naira.'); return; }
+    setListingBusy(true);
+    const { data, error } = await supabase.from('listings').insert({
+      seller_id: session.user.id, title: listingTitle.trim(), category: listingCategory,
+      description: listingDescription.trim(), price_ngn: price, condition: listingCondition, status: 'published',
+    }).select('id, title, category, description, price_ngn, condition, created_at').single();
+    setListingBusy(false);
+    if (error) { setNotice('We could not publish this listing. Please check the details and try again.'); return; }
+    setMarketListings(current => [data, ...current]);
+    setListingTitle('');
+    setListingDescription('');
+    setListingPrice('');
+    setNotice('Your listing is live. Meet buyers safely and verify payment before handing over a device.');
   };
 
   const filtered = services.filter(s => (active === 'All services' || s.tag.toLowerCase().includes(active.toLowerCase().split(' ')[0])) && (s.title + s.detail + s.tag).toLowerCase().includes(query.toLowerCase()));
