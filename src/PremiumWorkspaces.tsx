@@ -39,7 +39,7 @@ export default function PremiumWorkspaces({ userId, role, onNotice }: { userId: 
       supabase.from('bool_device_trace_requests').select('*').order('created_at',{ascending:false}).limit(100),
       role === 'admin' ? supabase.from('profiles').select('id,display_name,phone,role').in('role',['dispatcher','technician','dealer','law_enforcement']).limit(300) : Promise.resolve({data:[],error:null} as any),
       ['admin','dealer'].includes(role) ? supabase.from('bool_dealer_inventory').select('*').order('created_at',{ascending:false}).limit(300) : Promise.resolve({data:[],error:null} as any),
-      role === 'admin' ? supabase.from('bool_orders').select('id,order_reference,customer_name,customer_phone,customer_location,order_type,item_title,item_model,item_price_ngn,item_description,item_url,item_image_url,quantity,status,created_at').order('created_at',{ascending:false}).limit(300) : Promise.resolve({data:[],error:null} as any)
+      role === 'admin' ? supabase.from('bool_orders').select('id,order_reference,customer_id,customer_name,customer_phone,customer_location,order_type,item_title,item_model,item_price_ngn,item_description,item_url,item_image_url,quantity,status,created_at').order('created_at',{ascending:false}).limit(300) : Promise.resolve({data:[],error:null} as any)
     ]);
     const errors = [d.error,t.error,s.error,tr.error,pr.error,inv.error,ord.error].filter(Boolean);
     if (errors.length && role !== 'customer') onNotice('Some workspace records could not load. Check your role permissions and refresh.');
@@ -51,7 +51,7 @@ export default function PremiumWorkspaces({ userId, role, onNotice }: { userId: 
   const assignedTechJobs = useMemo(() => techJobs.filter(j => role === 'admin' || j.customer_id === userId || j.technician_id === userId), [techJobs, role, userId]);
   const createDelivery = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true);
-    const {error}=await supabase.from('bool_delivery_jobs').insert({...delivery,order_id:delivery.order_id||null,customer_id:userId,delivery_fee_ngn:delivery.delivery_fee_ngn?Number(delivery.delivery_fee_ngn):null,delivery_notes:null});
+    const {error}=await supabase.from('bool_delivery_jobs').insert({...delivery,order_id:delivery.order_id||null,customer_id:role==='admin'&&delivery.order_id?(orderOptions.find(o=>o.id===delivery.order_id)?.customer_id||userId):userId,delivery_fee_ngn:delivery.delivery_fee_ngn?Number(delivery.delivery_fee_ngn):null,delivery_notes:null});
     setBusy(false); if(error){onNotice('Delivery request was not saved. Sign in as a customer and check the required details.');return;}
     setDelivery({order_id:'',customer_name:'',customer_phone:'',pickup_name:'',pickup_phone:'',pickup_address:'',delivery_name:'',delivery_phone:'',delivery_address:'',item_summary:'',delivery_fee_ngn:''});onNotice('Delivery request submitted to BOOL.');await refresh();
   };
