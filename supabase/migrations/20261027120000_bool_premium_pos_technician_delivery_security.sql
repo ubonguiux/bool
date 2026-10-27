@@ -201,3 +201,46 @@ insert into public.cms_settings(key,value,description) values
 ('brand_logo_url','""'::jsonb,'Public brand logo image URL. Admin can replace this from CMS.'),
 ('hero_banners','[]'::jsonb,'Audience-specific home hero banner copy and image URLs managed by admin.')
 on conflict(key) do nothing;
+
+
+-- Enforce field-level boundaries beyond row-level access policies.
+create or replace function public.bool_guard_assigned_job_updates()
+returns trigger language plpgsql security definer set search_path=public,private,pg_temp as $$
+declare account_role text;
+begin
+  if private.is_bool_admin() then return new; end if;
+  select role into account_role from public.profiles where id=auth.uid();
+  if tg_table_name='bool_delivery_jobs' then
+    if tg_op='INSERT' then
+      if account_role<>'customer' or new.customer_id is distinct from auth.uid() or new.dispatcher_id is not null or new.status<>'requested' or new.payment_status<>'pending' or new.assigned_at is not null or new.picked_up_at is not null or new.delivered_at is not null or new.pickup_proof_url is not null or new.delivery_proof_url is not null then
+        raise exception 'Customers may only submit new delivery requests; assignment and completion fields are managed by BOOL';
+      end if;
+      return new;
+    end if;
+    if account_role='dispatcher' and old.dispatcher_id=auth.uid() then
+      if new.order_id is distinct from old.order_id or new.customer_id is distinct from old.customer_id or new.dispatcher_id is distinct from old.dispatcher_id or new.customer_name is distinct from old.customer_name or new.customer_phone is distinct from old.customer_phone or new.pickup_name is distinct from old.pickup_name or new.pickup_phone is distinct from old.pickup_phone or new.pickup_address is distinct from old.pickup_address or new.delivery_name is distinct from old.delivery_name or new.delivery_phone is distinct from old.delivery_phone or new.delivery_address is distinct from old.delivery_address or new.item_summary is distinct from old.item_summary or new.delivery_fee_ngn is distinct from old.delivery_fee_ngn or new.payment_status is distinct from old.payment_status or new.requested_at is distinct from old.requested_at or new.assigned_at is distinct from old.assigned_at then
+        raise exception 'Dispatchers may update delivery progress and handover notes, not customer, pricing or assignment details';
+      end if;
+      return new;
+    end if;
+  elsif tg_table_name='bool_technician_jobs' then
+    if tg_op='INSERT' then
+      if account_role<>'customer' or new.customer_id is distinct from auth.uid() or new.technician_id is not null or new.status<>'requested' or new.quoted_amount_ngn is not null or new.technician_notes is not null or new.customer_visible_update is not null then
+        raise exception 'Customers may only submit new service requests; assignment and quote fields are managed by BOOL';
+      end if;
+      return new;
+    end if;
+    if account_role='technician' and old.technician_id=auth.uid() then
+      if new.service_request_id is distinct from old.service_request_id or new.customer_id is distinct from old.customer_id or new.technician_id is distinct from old.technician_id or new.title is distinct from old.title or new.device_model is distinct from old.device_model or new.issue_description is distinct from old.issue_description or new.customer_phone is distinct from old.customer_phone or new.service_address is distinct from old.service_address or new.quoted_amount_ngn is distinct from old.quoted_amount_ngn or new.created_by is distinct from old.created_by then
+        raise exception 'Technicians may update service progress and notes, not customer, quote or assignment details';
+      end if;
+      return new;
+    end if;
+  end if;
+  raise exception 'Your role is not permitted to change this record';
+end;
+$$;
+drop trigger if exists bool_guard_delivery_job_fields on public.bool_delivery_jobs;
+create trigger bool_guard_delivery_job_fields before insert or update on public.bool_delivery_jobs for each row execute function public.bool_guard_assigned_job_updates();
+drop trigger if exists bool_guard_technician_job_fields on public.bool_technician_jobs;
+create trigger bool_guard_technician_job_fields before insert or update on public.bool_technician_jobs for each row execute function public.bool_guard_assigned_job_updates();
