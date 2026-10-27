@@ -1,3 +1,4 @@
+declare const process: { env: Record<string, string | undefined> };
 const projectUrl = process.env.VITE_SUPABASE_URL || 'https://lvmiplaoxzhtnumlznzq.supabase.co';
 const publicKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_qteHq5Qxy4_gCX8SdVnDfQ_2Z9X-DMT';
 const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char] as string));
