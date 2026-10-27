@@ -409,7 +409,9 @@ export default function App() {
     event.preventDefault();
     if (!orderCustomerName.trim() || !orderPhone.trim() || orderSubmitting) return;
     setOrderSubmitting(true);
-    const { data, error } = await supabase.from('bool_orders').insert({
+    const generatedReference = 'BOOL-' + crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+    const { error } = await supabase.from('bool_orders').insert({
+      order_reference: generatedReference,
       customer_id: session?.user?.id ?? null,
       customer_name: orderCustomerName.trim(),
       customer_phone: orderPhone.trim(),
@@ -426,15 +428,15 @@ export default function App() {
       quantity: orderContext.kind === 'product' ? Math.max(1, Math.min(99, Number(orderQuantity) || 1)) : 1,
       customer_note: orderNote.trim() || null,
       status: 'new'
-    }).select('id,order_reference').single();
+    });
     setOrderSubmitting(false);
-    if (error || !data) {
+    if (error) {
       setNotice('Your request could not be saved just now. Please check your connection and try again. Your request has not been submitted.');
       return;
     }
     const lines = [
       'Hello BOOL Team, I have submitted an order/request on BOOL.',
-      'Order reference: ' + data.order_reference,
+      'Order reference: ' + generatedReference,
       '',
       'ITEM OR SERVICE',
       'Name: ' + orderContext.title,
@@ -455,9 +457,9 @@ export default function App() {
       '',
       'This request is already recorded in BOOL. Please confirm the next step before payment.'
     ].filter(Boolean);
-    setOrderReference(data.order_reference);
+    setOrderReference(generatedReference);
     setOrderWhatsAppUrl('https://wa.me/2348069929435?text=' + encodeURIComponent(lines.join('\n')));
-    setNotice('Request saved to BOOL. Reference: ' + data.order_reference);
+    setNotice('Request saved to BOOL. Reference: ' + generatedReference);
   };
 
   const choose = (title: string) => {
