@@ -49,9 +49,21 @@ export default function ContentStudio({onNotice}:{onNotice:(message:string)=>voi
     setCatalogBusy(true);
     try{
       const rows=await extractCatalogRows(file);
-      if(!rows.length)throw new Error('No product information was detected. Try a clearer image or a PDF with product names and prices.');
+      if(!rows.length){
+        if(isImage){
+          const safeName=file.name.toLowerCase().replace(/[^a-z0-9._-]+/g,'-');
+          const path='catalog-products/'+Date.now()+'-'+safeName;
+          const {error}=await supabase.storage.from('bool-media').upload(path,file,{contentType:file.type,upsert:false});
+          if(error)throw new Error('No product text was detected and the photo could not be uploaded. Try a clearer photo or add the image URL manually.');
+          const url=supabase.storage.from('bool-media').getPublicUrl(path).data.publicUrl;
+          setDevice(v=>({...v,image_urls:[url,...parseList(v.image_urls).filter(x=>x!==url)].join(', ')}));
+          onNotice('Product photo added. No readable product details were detected, so complete the fields manually.');
+          return;
+        }
+        throw new Error('No product information was detected. Try a clearer PDF or a document with product names and prices.');
+      }
       const row=rows[0];
-      const get=(names:string[])=>{const found=Object.entries(row).find(([key,value])=>names.includes(key.toLowerCase().replace(/[ _-]+/g,''))&&String(value??'').trim());return found?String(found[1]).trim():'';};
+      const get=(names:string[])=>{const found=Object.entries(row).find(([key,value])=>names.includes(key.toLowerCase().replace(/[^a-z0-9]/g,''))&&String(value??'').trim());return found?String(found[1]).trim():'';};
       const price=get(['price','pricengn','cost','amount','sellingprice']).replace(/[₦,\s]/g,'');
       const title=get(['title','productname','name','device','item','product']);
       const features=get(['features','keyfeatures']).split(/[;,|]/).map(v=>v.trim()).filter(Boolean).join(', ');
