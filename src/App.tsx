@@ -413,6 +413,7 @@ export default function App() {
       orderContext.kind === 'product' && orderContext.condition ? 'Condition: ' + orderContext.condition : '',
       orderContext.kind === 'product' && typeof orderContext.price === 'number' ? 'Listed price: ₦' + orderContext.price.toLocaleString('en-NG') + ' (please confirm availability and final price)' : '',
       orderContext.url ? 'Bool link: ' + orderContext.url : '',
+      orderContext.image ? 'Product image: ' + orderContext.image : '',
       orderContext.description ? 'Details: ' + orderContext.description : '',
       '',
       'CUSTOMER DETAILS',
