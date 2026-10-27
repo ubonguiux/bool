@@ -254,7 +254,7 @@ export default function App() {
     setMeta('meta[property="og:title"]','content',title);
     setMeta('meta[property="og:description"]','content',description);
     setMeta('meta[property="og:url"]','content',canonical);
-    setMeta('meta[property="og:image"]','content','https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&h=630&q=85');
+    setMeta('meta[property="og:image"]','content','https://bool-ten-phi.vercel.app/og-bool.svg');
     setMeta('meta[name="twitter:card"]','content','summary_large_image');
     setMeta('meta[name="twitter:title"]','content',title);
     setMeta('meta[name="twitter:description"]','content',description);
