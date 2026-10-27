@@ -100,7 +100,7 @@ create table if not exists public.bool_dealer_inventory (
   unique(dealer_id,sku)
 );
 alter table public.bool_pos_sales add column if not exists inventory_id uuid;
-alter table public.bool_dealer_inventory enable row level security;
+do $ begin\n if not exists(select 1 from pg_constraint where conname='bool_pos_sales_inventory_id_fkey') then\n  alter table public.bool_pos_sales add constraint bool_pos_sales_inventory_id_fkey foreign key (inventory_id) references public.bool_dealer_inventory(id) on delete set null;\n end if;\nend $;\nalter table public.bool_dealer_inventory enable row level security;
 drop policy if exists "Dealers manage their own inventory" on public.bool_dealer_inventory;
 create policy "Dealers manage their own inventory" on public.bool_dealer_inventory for all to authenticated using (dealer_id=auth.uid() and exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='dealer')) with check (dealer_id=auth.uid() and exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='dealer'));
 drop policy if exists "Bool admins read dealer inventory" on public.bool_dealer_inventory;
@@ -154,6 +154,7 @@ create table if not exists public.bool_device_trace_requests (
   reviewed_by uuid references auth.users(id) on delete set null, reviewed_at timestamptz,
   result_summary text, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
+alter table public.bool_device_trace_requests add column if not exists updated_at timestamptz not null default now();
 alter table public.bool_device_trace_requests enable row level security;
 drop policy if exists "Law enforcement submit trace requests" on public.bool_device_trace_requests;
 create policy "Law enforcement submit trace requests" on public.bool_device_trace_requests for insert to authenticated with check (requested_by=auth.uid() and exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='law_enforcement'));
