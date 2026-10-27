@@ -258,7 +258,7 @@ export default function App() {
     setMeta('meta[name="twitter:card"]','content','summary_large_image');
     setMeta('meta[name="twitter:title"]','content',title);
     setMeta('meta[name="twitter:description"]','content',description);
-    setMeta('meta[name="twitter:image"]','content',origin+'/bool-social-preview.png');
+    setMeta('meta[name="twitter:image"]','content',origin+'/og-bool.svg');
     let canonicalLink = document.head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!canonicalLink) { canonicalLink = document.createElement('link'); canonicalLink.rel='canonical'; document.head.appendChild(canonicalLink); }
     canonicalLink.href = canonical;
@@ -268,7 +268,7 @@ export default function App() {
       '@context':'https://schema.org','@type':'WebPage','name':title,'description':description,'url':canonical,'isPartOf':{'@type':'WebSite','name':'BOOL','url':origin+'/'}
     } : {
       '@context':'https://schema.org','@graph':[
-        {'@type':'Organization','@id':origin+'/#organization','name':'BOOL','alternateName':'BOOL by RealTreats Technologies','url':origin+'/','description':description,'logo':origin+'/bool-social-preview.png','email':'realtreatstech@gmail.com','telephone':'+2348069929435','address':{'@type':'PostalAddress','streetAddress':'6 Oron Road Uyo Plaza','addressLocality':'Uyo','addressRegion':'Akwa Ibom State','addressCountry':'NG'}},
+        {'@type':'Organization','@id':origin+'/#organization','name':'BOOL','alternateName':'BOOL by RealTreats Technologies','url':origin+'/','description':description,'logo':origin+'/og-bool.svg','email':'realtreatstech@gmail.com','telephone':'+2348069929435','address':{'@type':'PostalAddress','streetAddress':'6 Oron Road Uyo Plaza','addressLocality':'Uyo','addressRegion':'Akwa Ibom State','addressCountry':'NG'}},
         {'@type':'WebSite','@id':origin+'/#website','name':'BOOL','url':origin+'/','inLanguage':'en-NG','publisher':{'@id':origin+'/#organization'}},
         {'@type':'WebPage','name':title,'description':description,'url':canonical,'isPartOf':{'@id':origin+'/#website'}}
       ]
