@@ -347,3 +347,5 @@
 .footer-share-button:hover{color:#10131c}
 .footer-links{flex-wrap:wrap}
 @media(max-width:640px){.showcase-device-actions{align-items:stretch;flex-direction:column}.showcase-share-button{width:100%}.catalog-autofill-box{padding:12px}}
+
+.public-page-header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
