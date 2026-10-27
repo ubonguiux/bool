@@ -44,6 +44,122 @@ function Brand({ light = false, logoUrl = '' }: { light?: boolean; logoUrl?: str
   </a>;
 }
 
+
+const BUILTIN_LEGAL_PAGES: Record<string, {title:string;slug:string;excerpt:string;body_markdown:string;category:string;seo_title:string;seo_description:string;published_at:string|null}> = {
+  'privacy-policy': {
+    title: 'Privacy Policy',
+    slug: 'privacy-policy',
+    category: 'LEGAL & PRIVACY',
+    excerpt: 'How BOOL collects, uses, stores and protects personal information when you use our mobile technology services.',
+    seo_title: 'Privacy Policy | BOOL Mobile Technology Platform',
+    seo_description: 'Read BOOL’s privacy policy covering account information, device and repair records, uploaded files, data security, retention and your privacy rights.',
+    published_at: null,
+    body_markdown: `## 1. Who we are
+
+BOOL is a mobile technology services platform operated by RealTreats Technologies in Uyo, Akwa Ibom State, Nigeria. We help customers, phone dealers, technicians and dispatch providers manage device-related services and business records.
+
+## 2. Information we may collect
+
+Depending on how you use BOOL, we may collect:
+- Account details such as your name, email address, phone number and account role.
+- Device and service details such as device model, condition, repair description, check results, service history and transaction references.
+- Contact and delivery information you submit to fulfil an order, repair or dispatch request.
+- Images, receipts, documents and other files you choose to upload.
+- Payment references and payment status supplied for reconciliation. BOOL does not currently enable online card payments.
+- Technical information such as browser/device type, basic usage events, timestamps and security logs.
+
+Please do not upload passwords, payment-card details, or information that is not needed for your request. Where a device identifier is required, BOOL aims to minimise what is displayed and stored.
+
+## 3. How we use information
+
+We use information to create and secure accounts; respond to requests; coordinate repairs, sales and deliveries; maintain transaction and service histories; prevent misuse; provide customer support; improve platform reliability; and comply with applicable legal obligations.
+
+## 4. Sharing and access
+
+Access is limited according to account permissions and operational need. We may share relevant information with the service provider, dealer or dispatcher involved in fulfilling your request, with infrastructure providers that help host and operate BOOL, or where disclosure is required or permitted by applicable law. We do not sell personal information. We review requests for information and disclose only what is appropriate and legally permitted.
+
+## 5. Hosting and service providers
+
+BOOL uses technology infrastructure, including Supabase for certain backend services and Vercel for hosting and delivery. These providers may process information on our behalf to operate the platform, subject to their applicable terms and safeguards. Information may be processed in locations outside Nigeria depending on provider infrastructure.
+
+## 6. Security and retention
+
+We use access controls and technical and organisational safeguards designed to protect information. No internet service can guarantee absolute security. We retain records for as long as reasonably needed for the service, operational records, dispute handling, security, and legal compliance, then delete or anonymise them where appropriate and feasible.
+
+## 7. Your choices and rights
+
+Subject to applicable law, you may request access to, correction of, or deletion of personal information, object to certain processing, or ask questions about how your information is used. Some transaction or security records may need to be retained where a lawful obligation or legitimate operational reason applies. To make a privacy request, contact RealTreats Technologies using the contact details below.
+
+## 8. Children
+
+BOOL is intended for people able to enter into service arrangements under applicable law. A parent or guardian should contact us if a child has provided personal information inappropriately.
+
+## 9. Changes to this policy
+
+We may update this policy as BOOL’s services or legal requirements change. The current version will be published on this page with any applicable update date.
+
+## 10. Contact
+
+For privacy questions or requests, contact **RealTreats Technologies**, 6 Oron Road Uyo Plaza, Uyo, Akwa Ibom State, Nigeria. Phone: **08069929435**.`
+  },
+  'terms-and-conditions': {
+    title: 'Terms & Conditions',
+    slug: 'terms-and-conditions',
+    category: 'LEGAL & PLATFORM USE',
+    excerpt: 'The terms that apply when you access BOOL, request services or use its business workspaces.',
+    seo_title: 'Terms & Conditions | BOOL',
+    seo_description: 'Review the BOOL terms for accounts, device checks, marketplace listings, repair requests, dealer and technician workspaces, deliveries and acceptable use.',
+    published_at: null,
+    body_markdown: `## 1. About these terms
+
+BOOL is a mobile technology services platform operated by RealTreats Technologies in Uyo, Akwa Ibom State, Nigeria. By accessing or using BOOL, you agree to these terms. If you do not agree, please do not use the platform.
+
+## 2. What BOOL does
+
+BOOL provides tools that may support device information checks, marketplace discovery, repair requests, dealer sales records, technician workflows, delivery coordination and customer support. Feature availability may vary, and we may change, suspend or improve features as the service develops.
+
+## 3. Accounts and access
+
+You must provide accurate information, protect your sign-in credentials and promptly report suspected unauthorised account access. Some workspaces are restricted to users whose identity, role or business relationship has been verified. Do not attempt to access another person’s records or use another account without permission.
+
+## 4. Device information and records
+
+Information displayed or recorded in BOOL is not, by itself, a guarantee of device ownership, authenticity, condition, warranty, blacklist status or freedom from claims. User-entered information may be incomplete or inaccurate. Verify important facts independently before buying, selling, repairing or accepting a device. Keep transaction references and receipts.
+
+## 5. Marketplace, repairs and deliveries
+
+Listings and service requests must be truthful and lawful. A listing or request does not guarantee that a provider will accept or complete it. Confirm scope, price, timing, handover condition and payment arrangements with the relevant party. BOOL may record service and delivery updates, but does not guarantee the conduct or performance of every third-party provider.
+
+## 6. Payments
+
+Follow the payment instructions shown for the relevant service and verify account details before transferring funds. Where payment references are submitted, you are responsible for their accuracy. Online card payments are not enabled unless BOOL expressly announces otherwise. Do not submit full card details or banking passwords through BOOL.
+
+## 7. Acceptable use
+
+You must not use BOOL to commit fraud, trade stolen goods, impersonate another person, harass others, upload unlawful or harmful material, bypass access controls, interfere with the platform, or misuse personal information. We may restrict or suspend access where reasonably necessary to protect users, investigate misuse or comply with law.
+
+## 8. Privacy
+
+Our collection and use of personal information is explained in the [Privacy Policy](/pages/privacy-policy). By using BOOL, you acknowledge that information needed to provide the requested service may be processed as described there.
+
+## 9. Intellectual property and content
+
+BOOL’s platform branding, design and software are owned by or licensed to their respective rights holders. You retain responsibility for content you submit and must have the rights and permissions needed to share it. You grant BOOL permission to process submitted content only as reasonably needed to operate, secure and provide the requested service.
+
+## 10. Availability and disclaimers
+
+BOOL is provided on an “as available” basis. To the extent permitted by law, we do not guarantee uninterrupted availability, error-free records, or the suitability of the platform for every purpose. Nothing in these terms excludes rights or remedies that cannot lawfully be excluded.
+
+## 11. Liability
+
+To the extent permitted by applicable law, RealTreats Technologies is not responsible for indirect losses arising from misuse of the platform, inaccurate user-submitted information, or independent acts of third parties. These terms do not exclude liability where exclusion is prohibited by law.
+
+## 12. Changes and contact
+
+We may update these terms as the platform evolves. Continued use after an updated version is published means you accept the revised terms to the extent permitted by law. Questions can be directed to **RealTreats Technologies**, 6 Oron Road Uyo Plaza, Uyo, Akwa Ibom State, Nigeria. Phone: **08069929435**.`
+  }
+};
+
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState('All services');
@@ -118,6 +234,47 @@ export default function App() {
   const [announcementBusy, setAnnouncementBusy] = useState(false);
   const [publicPageRoute, setPublicPageRoute] = useState(false);
   const [publicPage, setPublicPage] = useState<{title:string;slug:string;excerpt:string;body_markdown:string;category:string;seo_title:string;seo_description:string;published_at:string|null}|null>(null);
+  useEffect(() => {
+    const origin = window.location.origin;
+    const path = window.location.pathname;
+    const isLegal = path.startsWith('/pages/');
+    const title = isLegal && publicPage ? (publicPage.seo_title || publicPage.title + ' | BOOL') : 'BOOL | Phones, Repairs, Dealers & Mobile Technology in Akwa Ibom';
+    const description = isLegal && publicPage ? (publicPage.seo_description || publicPage.excerpt || 'Information about BOOL services and policies.') : 'Discover phones, trusted repair services, technology dealers and delivery support in Akwa Ibom State. BOOL helps customers and businesses keep clearer mobile technology records.';
+    const canonical = origin + (path === '/' ? '/' : path.replace(/\/$/, ''));
+    document.title = title;
+    const setMeta = (selector: string, attribute: string, value: string) => {
+      let element = document.head.querySelector(selector) as HTMLMetaElement | null;
+      if (!element) { element = document.createElement('meta'); if (selector.includes('property=')) element.setAttribute('property', selector.match(/property="([^"]+)"/)?.[1] || ''); else element.setAttribute('name', selector.match(/name="([^"]+)"/)?.[1] || ''); document.head.appendChild(element); }
+      element.setAttribute(attribute, value);
+    };
+    setMeta('meta[name="description"]','content',description);
+    setMeta('meta[name="robots"]','content','index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1');
+    setMeta('meta[property="og:type"]','content',isLegal?'article':'website');
+    setMeta('meta[property="og:site_name"]','content','BOOL');
+    setMeta('meta[property="og:title"]','content',title);
+    setMeta('meta[property="og:description"]','content',description);
+    setMeta('meta[property="og:url"]','content',canonical);
+    setMeta('meta[property="og:image"]','content',origin+'/bool-social-preview.png');
+    setMeta('meta[name="twitter:card"]','content','summary_large_image');
+    setMeta('meta[name="twitter:title"]','content',title);
+    setMeta('meta[name="twitter:description"]','content',description);
+    setMeta('meta[name="twitter:image"]','content',origin+'/bool-social-preview.png');
+    let canonicalLink = document.head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonicalLink) { canonicalLink = document.createElement('link'); canonicalLink.rel='canonical'; document.head.appendChild(canonicalLink); }
+    canonicalLink.href = canonical;
+    let structured = document.getElementById('bool-seo-jsonld');
+    if (!structured) { structured = document.createElement('script'); structured.id='bool-seo-jsonld'; structured.setAttribute('type','application/ld+json'); document.head.appendChild(structured); }
+    structured.textContent = JSON.stringify(isLegal && publicPage ? {
+      '@context':'https://schema.org','@type':'WebPage','name':title,'description':description,'url':canonical,'isPartOf':{'@type':'WebSite','name':'BOOL','url':origin+'/'}
+    } : {
+      '@context':'https://schema.org','@graph':[
+        {'@type':'Organization','@id':origin+'/#organization','name':'BOOL','alternateName':'BOOL by RealTreats Technologies','url':origin+'/','description':description,'logo':origin+'/bool-social-preview.png','email':'realtreatstech@gmail.com','telephone':'+2348069929435','address':{'@type':'PostalAddress','streetAddress':'6 Oron Road Uyo Plaza','addressLocality':'Uyo','addressRegion':'Akwa Ibom State','addressCountry':'NG'}},
+        {'@type':'WebSite','@id':origin+'/#website','name':'BOOL','url':origin+'/','inLanguage':'en-NG','publisher':{'@id':origin+'/#organization'}},
+        {'@type':'WebPage','name':title,'description':description,'url':canonical,'isPartOf':{'@id':origin+'/#website'}}
+      ]
+    });
+  }, [publicPageRoute, publicPage]);
+
   const [liveAnnouncement, setLiveAnnouncement] = useState<{id:string;title:string;message:string}|null>(null);
   const [announcementDismissed, setAnnouncementDismissed] = useState(false);
   const [adminBusy, setAdminBusy] = useState(false);
@@ -154,7 +311,12 @@ export default function App() {
     if (!match) return;
     setPublicPageRoute(true);
     const slug = decodeURIComponent(match[1]);
-    supabase.from('cms_pages').select('title,slug,excerpt,body_markdown,category,seo_title,seo_description,published_at').eq('slug', slug).eq('status', 'published').maybeSingle().then(({data}) => setPublicPage(data ?? null));
+    const builtin = BUILTIN_LEGAL_PAGES[slug];
+    if (builtin) setPublicPage(builtin);
+    supabase.from('cms_pages').select('title,slug,excerpt,body_markdown,category,seo_title,seo_description,published_at').eq('slug', slug).eq('status', 'published').maybeSingle().then(({data}) => {
+      if (data) setPublicPage(data);
+      else if (!builtin) setPublicPage(null);
+    });
   }, []);
 
   useEffect(() => {
@@ -526,7 +688,7 @@ export default function App() {
     <main>
       <section className="hero"><div className="hero-glow glow-one"/><div className="hero-copy"><div className="hero-announcement-slider" aria-label="Welcome and benefits for different Bool users">
 <div className="hero-slide-photo"><img src={['https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=900&q=85','https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=900&q=85','https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=900&q=85','https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=900&q=85','https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=900&q=85','https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=900&q=85'][heroSlide]} alt={['Customer completing a digital transaction','Technician working with electronics','Business owner using digital payment tools','Motorcycle delivery service','Team collaborating on business technology','Technology professionals working together'][heroSlide]} loading="eager"/></div>
-<div className="hero-slide-copy"><span className="hero-slide-audience">{['FOR EVERYDAY USERS','FOR VERIFIED TECHNICIANS','FOR PHONE DEALERS','FOR DESPATCHERS','BOOL PREMIUM WORKSPACES','FOR TRUST & PUBLIC SAFETY'][heroSlide]}</span><span className="hero-slide-count">0{heroSlide+1} / 06</span><strong>{['Buy and sell with more confidence','Turn your skills into managed service jobs','Run your device business with advanced POS','Deliver devices with a clear chain of custody','One platform. Three professional workspaces.','Build a clearer trail for device transactions'][heroSlide]}</strong><p>{['Explore device records, request help and keep a traceable reference for every transaction.','Receive assigned jobs, manage service stages, record customer updates and close work professionally.','Record sales, issue references, keep device transaction histories and provide clearer customer receipts.','Manage assigned pickups, delivery status, contact details and proof-of-delivery records.','Premium tools for dealer sales, technician service delivery and despatch management, with access controlled by verified roles.','BOOL is designed to strengthen trust and accountability. Device-history disclosures require an authorised request and BOOL review.'][heroSlide]}</p><button aria-label="Next information banner" onClick={() => setHeroSlide(current => (current+1)%6)}><ArrowRight size={16}/></button></div>
+<div className="hero-slide-copy"><span className="hero-slide-audience">{['FOR EVERYDAY USERS','FOR VERIFIED TECHNICIANS','FOR PHONE DEALERS','FOR DESPATCHERS','BOOL PREMIUM WORKSPACES','FOR TRUST & PUBLIC SAFETY'][heroSlide]}</span><span className="hero-slide-count">0{heroSlide+1} / 06</span><strong>{['Buy and sell with more confidence','Turn your skills into managed service jobs','Run your device business with advanced POS','Deliver devices with a clear chain of custody','One platform. Three professional workspaces.','Build a clearer trail for device transactions'][heroSlide]}</strong><p>{['Explore device records, request help and keep a traceable reference for every transaction.','Receive assigned jobs, manage service stages, record customer updates and close work professionally.','Record sales, issue references, keep device transaction histories and provide clearer customer receipts.','Manage assigned pickups, delivery status, contact details and proof-of-delivery records.','Premium tools for dealer sales, technician service delivery and despatch management, with access controlled by verified roles.','BOOL is designed to strengthen trust and accountability through clearer transaction records and responsible access controls.'][heroSlide]}</p><button aria-label="Next information banner" onClick={() => setHeroSlide(current => (current+1)%6)}><ArrowRight size={16}/></button></div>
 <div className="hero-slide-dots">{[0,1,2,3,4,5].map(i=><button key={i} aria-label={'Show banner '+(i+1)} className={heroSlide===i?'active':''} onClick={() => setHeroSlide(i)}/>)}</div></div><div className="eyebrow"><span className="pulse"/> BUILT FOR THE MOBILE WORLD <span className="eyebrow-line"/></div><h1>Find trusted tech services.<br/><span>We help make it right.</span></h1><p className="hero-lede">Find technicians and technology businesses reviewed by RealTreats Technologies. Request a service, pay through Bool’s managed process, and contact our team if something goes wrong.</p><div className="hero-ctas"><a className="btn btn-lime" href="#services">Explore Bool <ArrowRight size={17}/></a><a className="secondary-link" href="#how">See how it works ↗</a></div><div className="proof-row"><div className="proof-avatars"><span>U</span><span>T</span><span>D</span><b>+</b></div><div><strong>Made for real-world mobile needs</strong><small>For dealers, technicians and everyday users.</small></div></div></div>
       <div className="hero-visual"><div className="orbit orbit-a"/><div className="orbit orbit-b"/><div className="phone-back"><i/><i/><i className="small-cam"/></div><div className="scan-ring"><div className="scan-core"><ShieldCheck size={43}/></div></div><div className="float-card verified-card"><div className="card-icon"><BadgeCheck size={20}/></div><div><strong>Device report</strong><span>Clear checks. Clear limits.</span></div><span className="mini-check"><Check size={13}/></span></div><div className="float-card ai-card"><div className="ai-spark"><Sparkles size={17}/></div><div><strong>Bool intelligence</strong><span>Helpful, not guesswork.</span></div></div><div className="visual-caption"><span className="caption-dot"/> TRUST STARTS WITH WHAT YOU CAN VERIFY</div></div>
       <div className="hero-bottom"><span>01 / A BETTER WAY TO MOBILE</span><span>BUILT FOR PEOPLE WHO KEEP THE WORLD CONNECTED <ArrowUpRight size={13}/></span></div></section>
@@ -539,7 +701,7 @@ export default function App() {
       <div className="service-grid">{filtered.map((service) => { const Icon = service.icon; return <button className="service-card" key={service.title} onClick={() => choose(service.title)}><div className="service-card-top"><span className="service-icon"><Icon size={21}/></span><ArrowUpRight className="card-arrow" size={19}/></div><span className="service-tag">{service.tag}</span><h3>{service.title}</h3><p>{service.detail}</p><span className="card-bottom">Explore service <ArrowRight size={15}/></span>{service.title === 'Ask Bool AI' && <span className="coming-pill">IN DEVELOPMENT</span>}</button> })}</div></section>
       <section className="workbench" id="how"><div className="workbench-art"><div className="workbench-grid"/><div className="device-outline"><Smartphone size={94}/><div className="device-check"><Check size={19}/></div></div><div className="data-chip chip-top"><Cpu size={16}/> Diagnostics</div><div className="data-chip chip-bottom"><BatteryCharging size={16}/> Device health</div></div><div className="workbench-copy"><div className="eyebrow">FOR THE PEOPLE BEHIND THE REPAIR</div><h2>A better workbench.<br/><span>A better outcome.</span></h2><p>Technicians deserve more than scattered chats and handwritten notes. Bool is designed to bring repair jobs, customer approvals, diagnostics, parts and updates into one organised workflow.</p><ul><li><Check size={16}/> Job cards and repair status</li><li><Check size={16}/> Quotes, approvals and customer updates</li><li><Check size={16}/> Device history and parts tracking</li></ul><button className="btn btn-lime" onClick={() => choose('Technician Workbench')}>Explore technician tools <ArrowRight size={16}/></button></div></section>
       <section className="trust-section" id="trust"><div className="trust-icon"><ClipboardCheck size={27}/></div><div><div className="eyebrow dark-eyebrow">CUSTOMER PROTECTION</div><h2>We stay involved when it matters.</h2><p>RealTreats Technologies operates Bool, reviews providers before approval, and gives customers a clear route to ask questions, report problems and request a fair review. Verification badges will reflect checks actually completed.</p></div><div className="trust-points"><span><Check size={15}/> Provider review before public listing</span><span><Check size={15}/> A clear customer complaint channel</span><span><Check size={15}/> Payment confirmation by RealTreats</span></div></section>
-      <section className="payment-info-section" id="payments"><div className="payment-info-copy"><div className="eyebrow dark-eyebrow">PAYMENTS WITH A CLEAR RECORD</div><h2>Pay RealTreats Technologies.<br/>Keep your request reference.</h2><p>For manual bank transfers, use the account below only after Bool or our team confirms your service request and amount. RealTreats Technologies must verify receipt before a payment is marked confirmed. Never rely on a provider’s screenshot as payment confirmation.</p><div className="payment-note"><ShieldCheck size={18}/><span>Pay only for a confirmed Bool request. Keep your transfer receipt and request reference for support.</span></div></div><div className="payment-account-card"><span className="payment-account-label">BANK TRANSFER DETAILS</span><small>Bank</small><strong>Moniepoint MFB</strong><small>Account name</small><strong>RealTreats Technologies</strong><small>Account number</small><div className="account-number-row"><strong>6263388058</strong><button className="btn btn-lime btn-small" onClick={() => { void navigator.clipboard?.writeText('6263388058').then(() => setNotice('Account number copied.')).catch(() => setNotice('Account number: 6263388058')); }}>Copy number</button></div><div className="payment-status-note">Paystack integration: coming later. Online card payments are not enabled yet.</div></div></section><PublicShowcase section="social"/><section className="digital-akwa-section"><div className="digital-akwa-copy"><div className="eyebrow dark-eyebrow">A SAFER DIGITAL AKWA IBOM</div><h2>Building on Akwa Ibom’s digital progress</h2><p>We commend the Akwa Ibom State Government under Governor Pastor Umo Eno and the Honourable Commissioner for Science & Digital Economy, Dr. Frank Ekpenyong, for advancing practical digital services and connectivity. The state government reports digital workflows for public programmes and employment, and its August 2026 announcement of high-speed internet infrastructure at Victor Attah International Airport is another important step towards a more connected economy.</p><p>BOOL shares that direction at the level of everyday device transactions: helping dealers keep sales records, technicians document service work, despatchers track handovers, and customers retain useful references. With proper legal authority and human review, a future authorised workflow could help the Nigeria Police Force follow device transaction histories relevant to an investigation. BOOL does not give law enforcement automatic access or independently certify ownership or blacklist status.</p><a className="secondary-link digital-akwa-source" href="https://akwaibomstate.gov.ng/aibom-switches-on-digital-internet-backbone-at-victor-attah-international-airport/" target="_blank" rel="noreferrer">Read the State Government’s digital connectivity announcement <ArrowUpRight size={14}/></a></div><div className="digital-akwa-highlights"><div><span>01</span><strong>Digital public services</strong><small>Making everyday government processes more traceable.</small></div><div><span>02</span><strong>Connected economy</strong><small>Connectivity that can help businesses and innovators grow.</small></div><div><span>03</span><strong>Accountable device trade</strong><small>Clear sales, service and delivery records, with privacy safeguards.</small></div></div></section><section className="closing-cta" id="support"><div><div className="eyebrow">REAL PEOPLE. REAL SUPPORT.</div><h2>Need help with a service<br/>or have a concern?</h2><p>Contact RealTreats Technologies and tell us your Bool request reference. We will help you understand the next step.</p><p className="closing-contact-line"><Phone size={15}/> 08069929435 <span>·</span> <MapPin size={15}/> 6 Oron Road Uyo Plaza, Akwa Ibom State</p></div><button onClick={() => openBoolOrder({kind:'support',title:'General order or support enquiry',description:'Customer would like the BOOL team to assist.'})} className="btn btn-lime">Contact customer support <ArrowRight size={16}/></button><div className="closing-orb"/></section>
+      <section className="payment-info-section" id="payments"><div className="payment-info-copy"><div className="eyebrow dark-eyebrow">PAYMENTS WITH A CLEAR RECORD</div><h2>Pay RealTreats Technologies.<br/>Keep your request reference.</h2><p>For manual bank transfers, use the account below only after Bool or our team confirms your service request and amount. RealTreats Technologies must verify receipt before a payment is marked confirmed. Never rely on a provider’s screenshot as payment confirmation.</p><div className="payment-note"><ShieldCheck size={18}/><span>Pay only for a confirmed Bool request. Keep your transfer receipt and request reference for support.</span></div></div><div className="payment-account-card"><span className="payment-account-label">BANK TRANSFER DETAILS</span><small>Bank</small><strong>Moniepoint MFB</strong><small>Account name</small><strong>RealTreats Technologies</strong><small>Account number</small><div className="account-number-row"><strong>6263388058</strong><button className="btn btn-lime btn-small" onClick={() => { void navigator.clipboard?.writeText('6263388058').then(() => setNotice('Account number copied.')).catch(() => setNotice('Account number: 6263388058')); }}>Copy number</button></div><div className="payment-status-note">Paystack integration: coming later. Online card payments are not enabled yet.</div></div></section><PublicShowcase section="social"/><section className="digital-akwa-section"><div className="digital-akwa-copy"><div className="eyebrow dark-eyebrow">A SAFER DIGITAL AKWA IBOM</div><h2>Building on Akwa Ibom’s digital progress</h2><p>We commend the Akwa Ibom State Government under Governor Pastor Umo Eno and the Honourable Commissioner for Science & Digital Economy, Dr. Frank Ekpenyong, for advancing practical digital services and connectivity. The state government reports digital workflows for public programmes and employment, and its August 2026 announcement of high-speed internet infrastructure at Victor Attah International Airport is another important step towards a more connected economy.</p><p>BOOL shares that direction at the level of everyday device transactions: helping dealers keep sales records, technicians document service work, despatchers track handovers, and customers retain useful references. BOOL helps create clearer records for sales, service and delivery handovers, while access to sensitive information remains restricted and subject to privacy safeguards. A BOOL record is not, by itself, proof of ownership or blacklist status.</p><a className="secondary-link digital-akwa-source" href="https://akwaibomstate.gov.ng/aibom-switches-on-digital-internet-backbone-at-victor-attah-international-airport/" target="_blank" rel="noreferrer">Read the State Government’s digital connectivity announcement <ArrowUpRight size={14}/></a></div><div className="digital-akwa-highlights"><div><span>01</span><strong>Digital public services</strong><small>Making everyday government processes more traceable.</small></div><div><span>02</span><strong>Connected economy</strong><small>Connectivity that can help businesses and innovators grow.</small></div><div><span>03</span><strong>Accountable device trade</strong><small>Clear sales, service and delivery records, with privacy safeguards.</small></div></div></section><section className="closing-cta" id="support"><div><div className="eyebrow">REAL PEOPLE. REAL SUPPORT.</div><h2>Need help with a service<br/>or have a concern?</h2><p>Contact RealTreats Technologies and tell us your Bool request reference. We will help you understand the next step.</p><p className="closing-contact-line"><Phone size={15}/> 08069929435 <span>·</span> <MapPin size={15}/> 6 Oron Road Uyo Plaza, Akwa Ibom State</p></div><button onClick={() => openBoolOrder({kind:'support',title:'General order or support enquiry',description:'Customer would like the BOOL team to assist.'})} className="btn btn-lime">Contact customer support <ArrowRight size={16}/></button><div className="closing-orb"/></section>
     </main>
     <footer><div className="footer-main"><Brand light logoUrl={brandLogoUrl}/><p>Clarity for every device.<br/>Tools for everyone who keeps them working.</p><div className="footer-links"><a href="#services">Explore services</a><a href="#trust">Customer protection</a><a href="#payments">Payment details</a><a href="/share/page/about">About Bool</a><a href="/share/page/contact">Contact Bool</a><button type="button" className="footer-share-button" onClick={()=>void shareBoolPage('about','About Bool')}><Share2 size={13}/> Share About</button><button type="button" className="footer-share-button" onClick={()=>void shareBoolPage('contact','Contact Bool')}><Share2 size={13}/> Share Contact</button><a href="/pages/terms-and-conditions">Terms & Conditions</a><a href="/pages/privacy-policy">Privacy Policy</a><a href="https://github.com/ubonguiux/bool" target="_blank" rel="noreferrer">GitHub <ArrowUpRight size={13}/></a></div></div><div className="footer-bottom"><span>© {new Date().getFullYear()} Bool. Owned and operated by RealTreats Technologies.</span><span><Phone size={13}/> <a href="tel:08069929435">08069929435</a> · 6 Oron Road Uyo Plaza, Akwa Ibom State</span></div></footer>
     {servicePanel && <div className="modal-backdrop" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setServicePanel(null); }}><section className="verification-modal service-modal" role="dialog" aria-modal="true" aria-labelledby="service-panel-title"><div className="verification-head"><div><div className="eyebrow dark-eyebrow">{servicePanel === 'repair' ? 'BOOL REPAIR DESK' : 'BOOL MARKETPLACE'}</div><h2 id="service-panel-title">{servicePanel === 'repair' ? 'Request a device repair' : 'Explore mobile listings'}</h2><p>{servicePanel === 'repair' ? 'Describe the issue and keep a record of your repair request.' : 'Browse published offers or create a listing for a device you are authorised to sell.'}</p></div><button className="help-close" onClick={() => setServicePanel(null)} aria-label="Close service panel"><X size={18}/></button></div>{servicePanel === 'repair' ? <><form onSubmit={submitRepairRequest}><label className="verification-label" htmlFor="repair-model">Device make and model</label><input className="verification-input" id="repair-model" value={repairModel} onChange={e => setRepairModel(e.target.value)} placeholder="e.g. Samsung Galaxy A54" required/><label className="verification-label" htmlFor="repair-issue">What needs fixing?</label><textarea className="verification-input service-textarea" id="repair-issue" value={repairIssue} onChange={e => setRepairIssue(e.target.value)} placeholder="Describe the fault, symptoms and any damage..." minLength={8} required/><button className="btn btn-dark verification-submit" type="submit" disabled={repairBusy}>{repairBusy ? 'Submitting…' : 'Submit repair request'} <ArrowRight size={16}/></button></form><div className="saved-reports"><strong>Your recent repair requests</strong>{repairJobs.length ? repairJobs.map(job => <div className="saved-report-row" key={job.id}><span>{job.device_model} · {job.status.replace('_',' ')}</span><small>{job.issue_description} · {new Date(job.created_at).toLocaleDateString()}</small></div>) : <p className="empty-service-state">No repair requests yet. Your first request will appear here.</p>}</div><p className="verification-hint">This records your request; automated technician matching, quotes and in-app messaging are not active yet.</p></> : <><div className="market-listings">{marketListings.length ? marketListings.map(item => <article className="market-listing" key={item.id}><div className="market-listing-top"><span className="service-tag">{item.category.replace('_',' ').toUpperCase()} · {item.condition.replace('_',' ').toUpperCase()}</span><strong>₦{Number(item.price_ngn).toLocaleString('en-NG')}</strong></div><h3>{item.title}</h3><p>{item.description || 'No description provided.'}</p><small>Listed {new Date(item.created_at).toLocaleDateString()}</small></article>) : <p className="empty-service-state">No published listings yet. Be the first to post an offer.</p>}</div><form onSubmit={submitListing} className="listing-form"><strong>Create a marketplace listing</strong><label className="verification-label" htmlFor="listing-title">Listing title</label><input className="verification-input" id="listing-title" value={listingTitle} onChange={e => setListingTitle(e.target.value)} placeholder="e.g. iPhone 13 Pro 128GB" required/><div className="service-form-grid"><div><label className="verification-label" htmlFor="listing-category">Category</label><select className="verification-input" id="listing-category" value={listingCategory} onChange={e => setListingCategory(e.target.value)}><option value="phone">Phone</option><option value="accessory">Accessory</option><option value="tablet">Tablet</option><option value="other">Other</option></select></div><div><label className="verification-label" htmlFor="listing-condition">Condition</label><select className="verification-input" id="listing-condition" value={listingCondition} onChange={e => setListingCondition(e.target.value)}><option value="new">New</option><option value="like_new">Like new</option><option value="used">Used</option><option value="for_parts">For parts</option></select></div></div><label className="verification-label" htmlFor="listing-price">Price (NGN)</label><input className="verification-input" id="listing-price" type="number" min="0" step="1" value={listingPrice} onChange={e => setListingPrice(e.target.value)} placeholder="e.g. 250000" required/><label className="verification-label" htmlFor="listing-description">Description</label><textarea className="verification-input service-textarea" id="listing-description" value={listingDescription} onChange={e => setListingDescription(e.target.value)} placeholder="Describe condition, accessories and any known issues..." required/><button className="btn btn-dark verification-submit" type="submit" disabled={listingBusy}>{listingBusy ? 'Publishing…' : 'Publish listing'} <ArrowRight size={16}/></button></form><p className="verification-hint">Bool does not process payments or guarantee sellers. Meet safely and confirm the device and payment before completing a sale.</p></>}</section></div>}
