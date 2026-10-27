@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Bike, BriefcaseBusiness, CheckCircle2, ClipboardList, PackageCheck, Plus, ReceiptText, ShieldAlert, Smartphone, Wrench } from 'lucide-react';
+import { ArrowRight, Bike, ClipboardList, PackageCheck, Plus, ReceiptText, ShieldAlert, Wrench } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 type Job = Record<string, any>;
