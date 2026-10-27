@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { BadgeCheck, CreditCard, MessageSquare, ShieldCheck, Wrench } from 'lucide-react';
+import { BadgeCheck, Bell, CreditCard, MessageSquare, PackageCheck, ShieldCheck, Wrench } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
-type Tab='providers'|'requests'|'payments'|'support'|'disputes';
+type Tab='orders'|'providers'|'requests'|'payments'|'support'|'disputes';
 const label=(v:string)=>v.replace(/_/g,' ');
 const requestTransitions:Record<string,string[]>={requested:['requested','reviewing','quoted','cancelled'],reviewing:['reviewing','quoted','cancelled'],quoted:['quoted','cancelled'],customer_approved:['customer_approved','in_progress','cancelled','disputed'],in_progress:['in_progress','waiting_parts','completed','cancelled','disputed'],waiting_parts:['waiting_parts','in_progress','completed','cancelled','disputed'],completed:['completed','disputed'],cancelled:['cancelled'],disputed:['disputed','completed','cancelled']};
 const paymentTransitions:Record<string,string[]>={awaiting_transfer:['awaiting_transfer','cancelled'],submitted_for_review:['submitted_for_review','confirmed','disputed','cancelled'],confirmed:['confirmed','allocated_to_provider','refund_requested','disputed'],disputed:['disputed','confirmed','refund_requested'],refund_requested:['refund_requested','refunded','disputed'],allocated_to_provider:['allocated_to_provider','disputed'],refunded:['refunded'],cancelled:['cancelled']};
 export default function AdminOperations({onNotice}:{onNotice:(message:string)=>void}){
  const [tab,setTab]=useState<Tab>('providers');
+ const [orders,setOrders]=useState<any[]>([]);
+ const [orderResponses,setOrderResponses]=useState<Record<string,string>>({});
  const [providers,setProviders]=useState<any[]>([]);
  const [requests,setRequests]=useState<any[]>([]);
  const [payments,setPayments]=useState<any[]>([]);
@@ -24,7 +26,8 @@ export default function AdminOperations({onNotice}:{onNotice:(message:string)=>v
  const [reply,setReply]=useState<Record<string,string>>({});
  const [messages,setMessages]=useState<Record<string,any[]>>({});
  const refresh=async()=>{
-  const [p,r,pay,t,d,n,v]=await Promise.all([
+  const [o,p,r,pay,t,d,n,v]=await Promise.all([
+   supabase.from('bool_orders').select('id,order_reference,customer_id,customer_name,customer_phone,customer_location,order_type,product_id,item_title,item_model,item_condition,item_price_ngn,item_image_url,item_url,item_description,quantity,customer_note,status,admin_seen_at,admin_response,created_at,updated_at').order('created_at',{ascending:false}).limit(300),
    supabase.from('bool_providers').select('id,user_id,provider_type,work_specialty,public_name,slug,bio,service_categories,service_areas,contact_public,business_address,verification_status,status,created_at').order('created_at',{ascending:false}).limit(200),
    supabase.from('provider_service_requests').select('id,customer_id,provider_id,subject,description,status,quote_ngn,quote_details,created_at,device_model,issue_images,staff_response,next_action,journey_events,work_type').order('created_at',{ascending:false}).limit(200),
    supabase.from('service_payments').select('id,customer_id,service_request_id,repair_job_id,provider_id,amount_ngn,payment_method,transfer_reference,status,created_at').order('created_at',{ascending:false}).limit(200),
@@ -33,11 +36,11 @@ export default function AdminOperations({onNotice}:{onNotice:(message:string)=>v
    supabase.from('service_payment_private_notes').select('payment_id,notes,updated_at').order('updated_at',{ascending:false}).limit(200),
    supabase.from('bool_provider_verification_notes').select('provider_id,notes,updated_at').order('updated_at',{ascending:false}).limit(200)
   ]);
-  const errors=[p.error,r.error,pay.error,t.error,d.error,n.error,v.error].filter(Boolean);
+  const errors=[o.error,p.error,r.error,pay.error,t.error,d.error,n.error,v.error].filter(Boolean);
   if(errors.length)onNotice('Some operations records could not load. Check the Bool operations migration and admin access.');
-  setProviders(p.data??[]);setRequests(r.data??[]);setPayments(pay.data??[]);setTickets(t.data??[]);setDisputes(d.data??[]);setPaymentNotes(Object.fromEntries((n.data??[]).map((x:any)=>[x.payment_id,x.notes])));setVerificationNotes(Object.fromEntries((v.data??[]).map((x:any)=>[x.provider_id,x.notes])));
+  setOrders(o.data??[]);setProviders(p.data??[]);setRequests(r.data??[]);setPayments(pay.data??[]);setTickets(t.data??[]);setDisputes(d.data??[]);setPaymentNotes(Object.fromEntries((n.data??[]).map((x:any)=>[x.payment_id,x.notes])));setVerificationNotes(Object.fromEntries((v.data??[]).map((x:any)=>[x.provider_id,x.notes])));
  };
- useEffect(()=>{void refresh();},[]);
+ useEffect(()=>{void refresh();const channel=supabase.channel('bool-admin-orders-alerts').on('postgres_changes',{event:'INSERT',schema:'public',table:'bool_orders'},(payload:any)=>{const order=payload.new;setOrders(current=>[order,...current.filter(x=>x.id!==order.id)]);onNotice('New BOOL order received: '+(order.order_reference||order.item_title));if(typeof Notification!=='undefined'&&Notification.permission==='granted'){new Notification('New BOOL order',{body:(order.order_reference||'New request')+' · '+(order.item_title||'Order')});}}).subscribe();return()=>{void supabase.removeChannel(channel);};},[]);
  const update=async(table:string,id:string,payload:Record<string,unknown>,success:string)=>{setBusy(true);const {error}=await supabase.from(table as any).update(payload as any).eq('id',id);setBusy(false);if(error){onNotice('Change could not be saved. Check the selected status and permissions.');return;}onNotice(success);await refresh();};
  const setProvider=async(p:any,field:'status'|'verification_status',value:string)=>update('bool_providers',p.id,{[field]:value,updated_at:new Date().toISOString()},'Provider record updated.');
  const updateRequestJourney=async(r:any,nextStatus:string)=>{if(nextStatus==='quoted'&&!(Number(r.quote_ngn)>0)){onNotice('Add and save a valid quote before moving this request to quoted.');return;}const response=(staffResponses[r.id]??r.staff_response??'').trim();const next=(nextActions[r.id]??r.next_action??'').trim();if(!response||!next){onNotice('Add a customer-facing Bool response and a clear next action before saving this update.');return;}const at=new Date().toISOString();const events=Array.isArray(r.journey_events)?r.journey_events:[];await update('provider_service_requests',r.id,{status:nextStatus,staff_response:response,next_action:next,journey_events:[...events,{label:'Bool team update',note:response+' Next: '+next,at,status:nextStatus}],updated_at:at},'Request status, Bool response and next action published to the customer.');};
