@@ -14,7 +14,7 @@ async function shareProduct(device:Device){
  try{
   if(navigator.share){await navigator.share({title:device.title,text, url});return;}
   await navigator.clipboard.writeText(url);
-  window.dispatchEvent(new CustomEvent('bool-notice',{detail:'Product share link copied.'}));
+  window.alert('Product share link copied.');
  }catch(error){
   if(error instanceof Error&&error.name==='AbortError')return;
   try{await navigator.clipboard.writeText(url);window.dispatchEvent(new CustomEvent('bool-notice',{detail:'Product share link copied.'}));}
