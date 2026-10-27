@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BadgeCheck, Bell, CreditCard, MessageSquare, PackageCheck, ShieldCheck, Wrench } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Bell, CreditCard, MessageSquare, PackageCheck, ShieldCheck, Wrench } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
 type Tab='orders'|'providers'|'requests'|'payments'|'support'|'disputes';
