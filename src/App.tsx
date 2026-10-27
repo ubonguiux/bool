@@ -65,6 +65,7 @@ export default function App() {
   const [brandLogoUrl, setBrandLogoUrl] = useState('');
   const [brandLogoUploading, setBrandLogoUploading] = useState(false);
   const [publicPartners, setPublicPartners] = useState<Array<{id:string;name:string;description:string;logo_url:string;website_url:string;partner_type:string}>>([]);
+  const [teamMembers, setTeamMembers] = useState<Array<{name:string;role:string;bio?:string;photo_url?:string}>>([{name:'Ubong Dennis Etefia',role:'Head of BOOL',bio:'Leads product direction, delivery and platform strategy.'},{name:'Mr Kubiat',role:'Industry Relations Officer',bio:'Builds relationships across the mobile technology industry.'},{name:'Ukeme Okon Bassey',role:'Web Dev Op.',bio:'Supports web development and platform operations.'}]);
   const [verificationOpen, setVerificationOpen] = useState(false);
   const [imei, setImei] = useState('');
   const [deviceModel, setDeviceModel] = useState('');
@@ -139,8 +140,9 @@ export default function App() {
   useEffect(() => {
     Promise.all([
       supabase.from('cms_settings').select('value').eq('key','brand_logo_url').maybeSingle(),
-      supabase.from('bool_partners').select('id,name,description,logo_url,website_url,partner_type').eq('status','published').order('sort_order').limit(30)
-    ]).then(([settings,partners])=>{const value=settings.data?.value;setBrandLogoUrl(typeof value==='string'?value:typeof value?.url==='string'?value.url:'');setPublicPartners(partners.data??[]);});
+      supabase.from('bool_partners').select('id,name,description,logo_url,website_url,partner_type').eq('status','published').order('sort_order').limit(30),
+      supabase.from('cms_settings').select('value').eq('key','bool_team').maybeSingle()
+    ]).then(([settings,partners,teamSetting])=>{const value=settings.data?.value;setBrandLogoUrl(typeof value==='string'?value:typeof value?.url==='string'?value.url:'');setPublicPartners(partners.data??[]);const team=teamSetting.data?.value;if(Array.isArray(team))setTeamMembers(team.filter((m:any)=>m&&typeof m.name==='string'&&typeof m.role==='string'));});
   }, []);
 
   useEffect(() => {
