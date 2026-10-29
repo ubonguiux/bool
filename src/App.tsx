@@ -376,8 +376,8 @@ export default function App(){
   if(!rosterForm.title.trim()||!rosterForm.notes.trim()){tell('Complete the assignment title and notes before saving.');return}
   setBusy(true);
   try{
-   const payload={choir_id:choir.id,month_start:rosterForm.month_start,duty_type:rosterForm.duty_type,title:rosterForm.title.trim(),member_user_id:rosterForm.member_user_id||null,notes:rosterForm.notes.trim(),created_by:user.id};
-   const result=editingRosterId?await supabase.from('rvm_monthly_roster').update({...payload,created_by:undefined}).eq('id',editingRosterId).eq('choir_id',choir.id):await supabase.from('rvm_monthly_roster').insert(payload);
+   const payload={choir_id:choir.id,month_start:rosterForm.month_start,duty_type:rosterForm.duty_type,title:rosterForm.title.trim(),member_user_id:rosterForm.member_user_id||null,notes:rosterForm.notes.trim()};
+   const result=editingRosterId?await supabase.from('rvm_monthly_roster').update(payload).eq('id',editingRosterId).eq('choir_id',choir.id):await supabase.from('rvm_monthly_roster').insert({...payload,created_by:user.id});
    if(result.error)throw result.error;
    setRosterForm({month_start:new Date().toISOString().slice(0,7)+'-01',duty_type:'uniform',title:'',member_user_id:'',notes:''});setEditingRosterId(null);await loadAdminData();tell(editingRosterId?'Roster assignment updated.':'Monthly roster entry saved.');
   }catch(e){tell('Could not save roster: '+prettyError(e))}finally{setBusy(false)}
