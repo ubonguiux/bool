@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/share/product/:id",
-      "destination": "/api/share/product/:id"
+      "source": "/share/song/:id",
+      "destination": "/api/share/song/:id"
     },
     {
       "source": "/share/page/:slug",
