@@ -212,7 +212,7 @@ export default function App(){
   const current=pageMeta[active]||{title:'RVM Choir',description:'A shared home for choir songs, lyrics, recordings, rehearsals and administration.'};
   const title=chosen?chosen.title+' | RVM Choir':current.title+' | RVM Choir';
   const description=chosen?('Song details for '+chosen.title+'. '+[chosen.category,chosen.language,chosen.composer&&'Composer: '+chosen.composer,chosen.arranger&&'Arranger: '+chosen.arranger].filter(Boolean).join(' · ')+'. Sign in to RVM Choir to view authorised song details.').slice(0,240):current.description;
-  const upsert=(selector:string,attribute:string,value:string)=>{
+  const upsert=(selector:string,_attribute:string,value:string)=>{
    let element=document.head.querySelector(selector) as HTMLMetaElement|null;
    if(!element){element=document.createElement('meta');const key=selector.includes('property=')?'property':'name';const match=selector.match(/(?:property|name)="([^"]+)"/);element.setAttribute(key,match?.[1]||'');document.head.appendChild(element);}
    element.content=value;
