@@ -1,0 +1,16 @@
+-- Sample November 2026 roster. Safe to re-run without duplicate assignment titles.
+insert into public.rvm_monthly_roster (choir_id,month_start,duty_type,title,member_user_id,notes,status,created_by)
+select v.choir_id,v.month_start,v.duty_type,v.title,v.member_user_id,v.notes,v.status,v.created_by
+from (values
+('73aed7e0-381b-4f54-a7ad-259270e495e8'::uuid,'2026-11-01'::date,'uniform','November uniform colour and dress code',NULL::uuid,'Awaiting admin confirmation: publish the approved uniform colour, footwear, accessories and arrival time.','planned','b9ee3247-f614-4d61-a127-6a135b1b73a7'::uuid),
+('73aed7e0-381b-4f54-a7ad-259270e495e8'::uuid,'2026-11-01'::date,'backup','Sunday vocal backup team',NULL::uuid,'Placeholder: assign backup singers and confirm the songs and vocal parts before the first Sunday.','planned','b9ee3247-f614-4d61-a127-6a135b1b73a7'::uuid),
+('73aed7e0-381b-4f54-a7ad-259270e495e8'::uuid,'2026-11-01'::date,'press','November media and press duty',NULL::uuid,'Placeholder: confirm photographer, videographer, social updates and consent requirements.','planned','b9ee3247-f614-4d61-a127-6a135b1b73a7'::uuid),
+('73aed7e0-381b-4f54-a7ad-259270e495e8'::uuid,'2026-11-01'::date,'choir_sunday','First Sunday ministration',NULL::uuid,'Placeholder: confirm service date, song list, lead vocalists, instrumentalists and dress code.','planned','b9ee3247-f614-4d61-a127-6a135b1b73a7'::uuid),
+('73aed7e0-381b-4f54-a7ad-259270e495e8'::uuid,'2026-11-01'::date,'choir_sunday','Second Sunday ministration',NULL::uuid,'Placeholder: confirm service date, song list, lead vocalists, instrumentalists and dress code.','planned','b9ee3247-f614-4d61-a127-6a135b1b73a7'::uuid),
+('73aed7e0-381b-4f54-a7ad-259270e495e8'::uuid,'2026-11-01'::date,'choir_sunday','Third Sunday ministration',NULL::uuid,'Placeholder: confirm service date, song list, lead vocalists, instrumentalists and dress code.','planned','b9ee3247-f614-4d61-a127-6a135b1b73a7'::uuid),
+('73aed7e0-381b-4f54-a7ad-259270e495e8'::uuid,'2026-11-01'::date,'choir_sunday','Fourth Sunday ministration',NULL::uuid,'Placeholder: confirm service date, song list, lead vocalists, instrumentalists and dress code.','planned','b9ee3247-f614-4d61-a127-6a135b1b73a7'::uuid),
+('73aed7e0-381b-4f54-a7ad-259270e495e8'::uuid,'2026-11-01'::date,'administration','Monthly choir meeting and attendance',NULL::uuid,'Placeholder: confirm meeting date, venue, agenda, attendance lead and minutes secretary.','planned','b9ee3247-f614-4d61-a127-6a135b1b73a7'::uuid),
+('73aed7e0-381b-4f54-a7ad-259270e495e8'::uuid,'2026-11-01'::date,'other','Rehearsal and song preparation',NULL::uuid,'Placeholder: publish rehearsal dates, start time, song keys, recordings and section leads.','planned','b9ee3247-f614-4d61-a127-6a135b1b73a7'::uuid),
+('73aed7e0-381b-4f54-a7ad-259270e495e8'::uuid,'2026-11-01'::date,'other','Welfare and member follow-up',NULL::uuid,'Placeholder: assign welfare contact and update the agreed follow-up list.','planned','b9ee3247-f614-4d61-a127-6a135b1b73a7'::uuid)
+) as v(choir_id,month_start,duty_type,title,member_user_id,notes,status,created_by)
+where not exists(select 1 from public.rvm_monthly_roster r where r.choir_id=v.choir_id and r.month_start=v.month_start and r.title=v.title);
