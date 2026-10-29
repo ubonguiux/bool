@@ -35,10 +35,6 @@ export default function App(){
  const [unreadMessageCount,setUnreadMessageCount]=useState(0);
  const [memberRoleAssignments,setMemberRoleAssignments]=useState<MemberRoleAssignment[]>([]);
  const [roleAssignmentForm,setRoleAssignmentForm]=useState({user_id:'',role_key:'instrumentalist',instrument_name:''});
- const [messageTopicFilter,setMessageTopicFilter]=useState('');
- const [unreadMessageCount,setUnreadMessageCount]=useState(0);
- const [memberRoleAssignments,setMemberRoleAssignments]=useState<MemberRoleAssignment[]>([]);
- const [roleAssignmentForm,setRoleAssignmentForm]=useState({user_id:'',role_key:'instrumentalist',instrument_name:''});
  const [avatarFile,setAvatarFile]=useState<File|null>(null);
  const [memberForm,setMemberForm]=useState({display_name:'',voice_part:'',bio:'',instruments:''});
  const [musicAssignments,setMusicAssignments]=useState<MusicAssignment[]>([]);
