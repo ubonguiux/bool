@@ -3,6 +3,7 @@ alter table public.rvm_messages add column if not exists message_type text not n
 alter table public.rvm_messages add column if not exists audio_path text;
 alter table public.rvm_messages add column if not exists transcript text;
 alter table public.rvm_messages add column if not exists duration_ms integer;
+alter table public.rvm_messages drop constraint if exists rvm_messages_voice_fields_check;
 alter table public.rvm_messages add constraint rvm_messages_voice_fields_check check (
  (message_type='text' and audio_path is null and duration_ms is null)
  or (message_type='voice' and audio_path is not null and duration_ms between 0 and 600000)
