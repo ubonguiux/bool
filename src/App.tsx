@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AudioLines, BookOpen, CalendarDays, Check, ChevronDown, CircleHelp, Clock3, FileAudio, FileText, Filter, Headphones, Home, Library, ListMusic, Menu, Music2, Pause, Play, Plus, Search, Settings2, Share2, SlidersHorizontal, Sparkles, Upload, Users, X } from 'lucide-react';
+import { CalendarDays, Check, CircleHelp, Clock3, FileAudio, FileText, Headphones, Home, Library, ListMusic, Menu, Music2, Pause, Play, Plus, Search, Settings2, Share2, SlidersHorizontal, Sparkles, Upload, Users, X } from 'lucide-react';
 
 type Song = { id:string; title:string; category:string; language:string; lyrics:string; composer:string; added:string; lastPerformed:string; event:string; audioName:string; favorite:boolean };
 const starterSongs:Song[] = [
