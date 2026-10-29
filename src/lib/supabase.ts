@@ -1,13 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
-if (!supabaseUrl || !supabasePublishableKey) {
-  console.warn('Bool backend environment variables are missing. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.');
-}
+// The Vercel project still has the former Bool backend configured. Never let
+// the RVM Choir branch write to that project while the dedicated backend is pending.
+const legacyBoolProjectUrl = 'https://lvmiplaoxzhtnumlznzq.supabase.co';
+export const isRvmBackendConfigured = Boolean(
+  supabaseUrl &&
+  supabasePublishableKey &&
+  supabaseUrl.replace(/\/$/, '') !== legacyBoolProjectUrl
+);
 
 export const supabase = createClient(
-  supabaseUrl || 'https://lvmiplaoxzhtnumlznzq.supabase.co',
-  supabasePublishableKey || 'sb_publishable_qteHq5Qxy4_gCX8SdVnDfQ_2Z9X-DMT',
+  isRvmBackendConfigured ? supabaseUrl! : 'https://rvm-choir-not-configured.invalid',
+  isRvmBackendConfigured ? supabasePublishableKey! : 'rvm-choir-backend-not-configured',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  },
 );

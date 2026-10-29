@@ -1,555 +1,215 @@
-import { useEffect, useState } from 'react';
-import type { Session } from '@supabase/supabase-js';
-import { supabase } from './lib/supabase';
-import { ArrowRight, ArrowUpRight, BadgeCheck, BatteryCharging, Check, ChevronDown, CircleHelp, ClipboardCheck, Cpu, ImagePlus, Copy, Trash2, Menu, Search, ShieldCheck, Smartphone, Sparkles, Store, Wrench, X, Phone, MapPin, Share2 } from 'lucide-react';
-import ContentStudio from './ContentStudio';
-import PublicShowcase from './PublicShowcase';
-import CustomerHub from './CustomerHub';
-import AdminOperations from './AdminOperations';
-import PremiumWorkspaces from './PremiumWorkspaces';
-import MarkdownRenderer from './MarkdownRenderer';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
+import type { User } from '@supabase/supabase-js';
+import { CalendarDays, Check, CircleHelp, Clock3, FileAudio, FileText, Home, Library, ListMusic, LogOut, Menu, Music2, Play, Plus, Search, Settings2, Share2, SlidersHorizontal, Sparkles, Users, X, Download, Copy, Mail, LockKeyhole, RefreshCw } from 'lucide-react';
+import { isRvmBackendConfigured, supabase } from './lib/supabase';
 
-type BoolOrderContext = { kind: 'product' | 'service' | 'support'; title: string; description?: string; price?: number; image?: string; url?: string; category?: string; condition?: string; model?: string; product_id?: string };
+type Choir = { id:string; name:string; invite_code:string };
+type Song = { id:string; title:string; category:string; language:string; lyrics:string; composer:string; arranger:string; added:string; lastPerformed:string; event:string; favorite:boolean };
+type SongFile = { id:string; storage_path:string; original_filename:string; mime_type:string; file_size_bytes:number; kind:string };
+const categories = ['All Songs','Hymns','Praise & Worship','Special Numbers','Christmas','Anthems','Traditional'];
+const fmt=(date:string)=>date?new Date(date+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'Not recorded';
+const prettyError=(error:unknown)=>error instanceof Error?error.message:'Something went wrong. Please try again.';
+const safeFilename=(name:string)=>name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g,'-').slice(-100)||'choir-file';
 
-const services = [
-  { title: 'Check a phone', detail: 'Use a guided checklist and understand what Bool has and has not verified.', icon: ShieldCheck, tag: 'DEVICE TRUST' },
-  { title: 'Find a technician', detail: 'Request service from a provider approved by RealTreats Technologies.', icon: Wrench, tag: 'REPAIR & SERVICE' },
-  { title: 'Find a business', detail: 'Discover reviewed technology businesses, dealers and repair shops.', icon: Store, tag: 'VERIFIED NETWORK' },
-  { title: 'Explore devices', detail: 'Compare device images, prices, condition, specifications and features.', icon: Smartphone, tag: 'DEVICES & PRICES' },
-  { title: 'Contact RealTreats', detail: 'Ask a question, follow up on a request, or raise a complaint.', icon: CircleHelp, tag: 'CUSTOMER SUPPORT' },
-];
+export default function App(){
+ const [user,setUser]=useState<User|null>(null);
+ const [authLoading,setAuthLoading]=useState(true);
+ const [busy,setBusy]=useState(false);
+ const [authMode,setAuthMode]=useState<'signin'|'signup'|'reset'>('signin');
+ const [email,setEmail]=useState('');
+ const [password,setPassword]=useState('');
+ const [displayName,setDisplayName]=useState('');
+ const [authMessage,setAuthMessage]=useState('');
+ const [choir,setChoir]=useState<Choir|null>(null);
+ const [role,setRole]=useState('member');
+ const [setupMode,setSetupMode]=useState<'create'|'join'>('create');
+ const [choirName,setChoirName]=useState('');
+ const [inviteCode,setInviteCode]=useState('');
+ const [songs,setSongs]=useState<Song[]>([]);
+ const [files,setFiles]=useState<SongFile[]>([]);
+ const [query,setQuery]=useState('');
+ const [category,setCategory]=useState('All Songs');
+ const [active,setActive]=useState('Library');
+ const [selected,setSelected]=useState<string|null>(null);
+ const [showAdd,setShowAdd]=useState(false);
+ const [mobileNav,setMobileNav]=useState(false);
+ const [notice,setNotice]=useState('');
+ const [loadingSongs,setLoadingSongs]=useState(false);
+ const [signedUrls,setSignedUrls]=useState<Record<string,string>>({});
+ const [uploadFile,setUploadFile]=useState<File|null>(null);
+ const [performanceEvent,setPerformanceEvent]=useState('');
+ const [showPerformance,setShowPerformance]=useState(false);
+ const [form,setForm]=useState({title:'',category:'Hymns',language:'English',lyrics:'',composer:'',arranger:'',event:'',lastPerformed:''});
+ const isManager=['owner','admin','director','librarian'].includes(role);
+ const tell=useCallback((message:string)=>{setNotice(message);window.setTimeout(()=>setNotice(''),4200)},[]);
 
-async function shareBoolPage(slug:'about'|'contact',title:string){
-  const url=window.location.origin+'/share/page/'+slug;
+ useEffect(()=>{
+  if(!isRvmBackendConfigured){setAuthLoading(false);return}
+  let alive=true;
+  supabase.auth.getSession().then(({data,error})=>{if(!alive)return;if(error)tell(error.message);setUser(data.session?.user??null);setAuthLoading(false)});
+  const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,next)=>{setUser(next?.user??null);setAuthLoading(false)});
+  return ()=>{alive=false;subscription.unsubscribe()};
+ },[tell]);
+
+ const loadWorkspace=useCallback(async(currentUser:User)=>{
+  setBusy(true);
   try{
-    if(navigator.share){await navigator.share({title,text:slug==='contact'?'Contact Bool at 08069929435 or visit 6 Oron Road Uyo Plaza, Akwa Ibom State.':'Learn about Bool, the mobile technology services platform operated by RealTreats Technologies.',url});return;}
-    await navigator.clipboard.writeText(url);
-    window.alert(title+' share link copied.');
-  }catch(error){
-    if(error instanceof Error&&error.name==='AbortError')return;
-    try{await navigator.clipboard.writeText(url);window.alert(title+' share link copied.');}
-    catch{window.prompt('Copy this share link:',url);}
-  }
-}
+   const {data:membership,error:memberError}=await supabase.from('choir_members').select('choir_id,role').eq('user_id',currentUser.id).order('joined_at',{ascending:true}).limit(1).maybeSingle();
+   if(memberError)throw memberError;
+   if(!membership){setChoir(null);setRole('member');setSongs([]);return}
+   const {data:choirData,error:choirError}=await supabase.from('choirs').select('id,name,invite_code').eq('id',membership.choir_id).single();
+   if(choirError)throw choirError;
+   setChoir(choirData as Choir);setRole(membership.role);
+  }catch(e){tell('Could not load your choir: '+prettyError(e))}
+  finally{setBusy(false)}
+ },[tell]);
 
-function Brand({ light = false, logoUrl = '' }: { light?: boolean; logoUrl?: string }) {
-  return <a className={`brand ${light ? 'brand-light' : ''}`} href="#" aria-label="Bool home">
-    {logoUrl ? <img src={logoUrl} className="brand-mark brand-image-mark" alt="BOOL logo"/> : <svg viewBox="0 0 44 44" className="brand-mark" role="img" aria-label="Bool abstract logo">
-      <defs><linearGradient id="boolGradient" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#D6FF79"/><stop offset="1" stopColor="#86D94B"/></linearGradient></defs>
-      <path d="M22 3.5 39.5 13.7v16.6L22 40.5 4.5 30.3V13.7L22 3.5Z" fill="url(#boolGradient)"/>
-      <path d="M17 12.5h6.8a7.2 7.2 0 0 1 5.4 12 7.1 7.1 0 0 1-5.4 12H17V12.5Z" fill="#10131C"/>
-      <path d="M17 19h6.1a3.4 3.4 0 1 1 0 6.8H17V19Zm0 11h6.5a3.4 3.4 0 1 1 0 6.8H17V30Z" fill="#D6FF79"/>
-      <circle cx="13" cy="22" r="2.4" fill="#10131C"/><circle cx="13" cy="33" r="2.4" fill="#10131C"/>
-    </svg>}<span>bool<span className="brand-dot">.</span></span>
-  </a>;
-}
+ useEffect(()=>{if(user)void loadWorkspace(user);else{setChoir(null);setSongs([]);setRole('member')}},[user,loadWorkspace]);
 
-export default function App() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [active, setActive] = useState('All services');
-  const [query, setQuery] = useState('');
-  const [notice, setNotice] = useState('');
-  const [orderOpen, setOrderOpen] = useState(false);
-  const [orderSubmitting, setOrderSubmitting] = useState(false);
-  const [orderReference, setOrderReference] = useState('');
-  const [orderWhatsAppUrl, setOrderWhatsAppUrl] = useState('');
-  const [orderContext, setOrderContext] = useState<BoolOrderContext>({kind:'support',title:'General enquiry to Bool'});
-  const [orderCustomerName, setOrderCustomerName] = useState('');
-  const [orderPhone, setOrderPhone] = useState('');
-  const [orderQuantity, setOrderQuantity] = useState('1');
-  const [orderLocation, setOrderLocation] = useState('');
-  const [orderNote, setOrderNote] = useState('');
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [customerHubTab, setCustomerHubTab] = useState<'providers' | 'requests' | 'support' | 'payments' | null>(null);
-  const [heroSlide, setHeroSlide] = useState(0);
-  const [brandLogoUrl, setBrandLogoUrl] = useState('');
-  const [brandLogoUploading, setBrandLogoUploading] = useState(false);
-  const [publicPartners, setPublicPartners] = useState<Array<{id:string;name:string;description:string;logo_url:string;website_url:string;partner_type:string}>>([]);
-  const [verificationOpen, setVerificationOpen] = useState(false);
-  const [imei, setImei] = useState('');
-  const [deviceModel, setDeviceModel] = useState('');
-  const [checkedTests, setCheckedTests] = useState<string[]>([]);
-  const [verificationMessage, setVerificationMessage] = useState('');
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authName, setAuthName] = useState('');
-  const [authBusy, setAuthBusy] = useState(false);
-  const [authMessage, setAuthMessage] = useState('');
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<{ display_name: string; role: string } | null>(null);
-  const [savedChecks, setSavedChecks] = useState<Array<{ id: string; device_model: string; imei_last4: string | null; created_at: string; observed_tests: string[] }>>([]);
-  const [savingReport, setSavingReport] = useState(false);
-  const [servicePanel, setServicePanel] = useState<'repair' | 'marketplace' | null>(null);
-  const [repairModel, setRepairModel] = useState('');
-  const [repairIssue, setRepairIssue] = useState('');
-  const [repairBusy, setRepairBusy] = useState(false);
-  const [repairJobs, setRepairJobs] = useState<Array<{ id: string; device_model: string; issue_description: string; status: string; created_at: string }>>([]);
-  const [marketListings, setMarketListings] = useState<Array<{ id: string; title: string; category: string; description: string; price_ngn: number; condition: string; created_at: string }>>([]);
-  const [listingTitle, setListingTitle] = useState('');
-  const [listingCategory, setListingCategory] = useState('phone');
-  const [listingDescription, setListingDescription] = useState('');
-  const [listingPrice, setListingPrice] = useState('');
-  const [listingCondition, setListingCondition] = useState('used');
+ const loadSongs=useCallback(async()=>{
+  if(!choir||!user)return;
+  setLoadingSongs(true);
+  try{
+   const [{data:rows,error},{data:favourites,error:favError},{data:history,error:historyError}]=await Promise.all([
+    supabase.from('songs').select('id,title,category,language,lyrics,composer,arranger,created_at,archived_at').eq('choir_id',choir.id).is('archived_at',null).order('title'),
+    supabase.from('song_favourites').select('song_id').eq('user_id',user.id),
+    supabase.from('song_performances').select('song_id,performed_on,event_name').eq('choir_id',choir.id).order('performed_on',{ascending:false})
+   ]);
+   if(error)throw error;if(favError)throw favError;if(historyError)throw historyError;
+   const favSet=new Set((favourites??[]).map(x=>x.song_id));
+   const latest=new Map<string,{date:string,event:string}>();
+   for(const item of history??[])if(!latest.has(item.song_id))latest.set(item.song_id,{date:item.performed_on,event:item.event_name});
+   setSongs((rows??[]).map(row=>({id:row.id,title:row.title,category:row.category||'Uncategorised',language:row.language||'English',lyrics:row.lyrics||'',composer:row.composer||'',arranger:row.arranger||'',added:(row.created_at||'').slice(0,10),lastPerformed:latest.get(row.id)?.date||'',event:latest.get(row.id)?.event||'',favorite:favSet.has(row.id)})));
+  }catch(e){tell('Could not load songs: '+prettyError(e))}
+  finally{setLoadingSongs(false)}
+ },[choir,user,tell]);
 
-  const [listingBusy, setListingBusy] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(false);
-  const [adminTab, setAdminTab] = useState<'overview' | 'users' | 'devices' | 'repairs' | 'listings' | 'operations' | 'cms' | 'catalog' | 'media' | 'announcements' | 'settings' | 'audit'>('overview');
-  const [mediaFiles, setMediaFiles] = useState<Array<{name:string;id:string|null;updated_at:string|null;metadata?:{mimetype?:string;size?:number}|null}>>([]);
-  const [mediaBusy, setMediaBusy] = useState(false);
-  type CmsPage = { id: string; title: string; slug: string; excerpt: string; body_markdown: string; category: string; status: string; featured: boolean; seo_title: string; seo_description: string; updated_at: string };
-  const emptyCmsPage = { title: '', slug: '', excerpt: '', body_markdown: '', category: 'General', status: 'draft', featured: false, seo_title: '', seo_description: '' };
-  const [cmsPages, setCmsPages] = useState<CmsPage[]>([]);
-  const [cmsEditingId, setCmsEditingId] = useState<string | null>(null);
-  const [cmsDraft, setCmsDraft] = useState(emptyCmsPage);
-  const [cmsSaving, setCmsSaving] = useState(false);
-  const [cmsAnnouncements, setCmsAnnouncements] = useState<Array<{id:string;title:string;message:string;audience:string;status:string;created_at:string}>>([]);
-  const [cmsSettings, setCmsSettings] = useState<Array<{key:string;value:any;description:string;updated_at:string}>>([]);
-  const [auditLogs, setAuditLogs] = useState<Array<{id:number;action:string;resource_type:string;resource_id:string|null;created_at:string;actor_id:string|null}>>([]);
-  const [settingKey, setSettingKey] = useState('');
-  const [settingValue, setSettingValue] = useState('');
-  const [settingDescription, setSettingDescription] = useState('');
-  const [announcementTitle, setAnnouncementTitle] = useState('');
-  const [announcementMessage, setAnnouncementMessage] = useState('');
-  const [announcementAudience, setAnnouncementAudience] = useState('all');
-  const [announcementStatus, setAnnouncementStatus] = useState('draft');
-  const [announcementBusy, setAnnouncementBusy] = useState(false);
-  const [publicPageRoute, setPublicPageRoute] = useState(false);
-  const [publicPage, setPublicPage] = useState<{title:string;slug:string;excerpt:string;body_markdown:string;category:string;seo_title:string;seo_description:string;published_at:string|null}|null>(null);
-  const [liveAnnouncement, setLiveAnnouncement] = useState<{id:string;title:string;message:string}|null>(null);
-  const [announcementDismissed, setAnnouncementDismissed] = useState(false);
-  const [adminBusy, setAdminBusy] = useState(false);
-  const [adminProfiles, setAdminProfiles] = useState<Array<{ id: string; display_name: string; role: string; created_at: string }>>([]);
-  const [adminChecks, setAdminChecks] = useState<Array<{ id: string; user_id: string; device_model: string; imei_last4: string | null; official_check_status: string; created_at: string }>>([]);
-  const [adminRepairs, setAdminRepairs] = useState<Array<{ id: string; device_model: string; issue_description: string; status: string; quote_ngn: number | null; created_at: string }>>([]);
-  const [adminListings, setAdminListings] = useState<Array<{ id: string; title: string; category: string; price_ngn: number; status: string; created_at: string }>>([]);
+ useEffect(()=>{void loadSongs()},[loadSongs]);
 
+ const loadFiles=useCallback(async(songId:string)=>{
+  if(!choir)return;
+  const {data,error}=await supabase.from('song_files').select('id,storage_path,original_filename,mime_type,file_size_bytes,kind').eq('choir_id',choir.id).eq('song_id',songId).order('created_at');
+  if(error){tell('Could not load attachments: '+prettyError(error));return}
+  setFiles((data??[]) as SongFile[]);
+ },[choir,tell]);
+ useEffect(()=>{if(selected)void loadFiles(selected);else{setFiles([]);setSignedUrls({})}},[selected,loadFiles]);
 
+ const filtered=useMemo(()=>songs.filter(s=>(category==='All Songs'||s.category===category)&&(active!=='Favorites'||s.favorite)&&(s.title+' '+s.lyrics+' '+s.category+' '+s.composer+' '+s.arranger+' '+s.event).toLowerCase().includes(query.toLowerCase())),[songs,category,active,query]);
+ const chosen=songs.find(s=>s.id===selected);
+ const stats=[{label:'Songs in library',value:songs.length,icon:Library},{label:'Categories',value:new Set(songs.map(s=>s.category)).size,icon:ListMusic},{label:'Recently performed',value:songs.filter(s=>s.lastPerformed&&Date.now()-new Date(s.lastPerformed).getTime()<30*86400000).length,icon:CalendarDays}];
 
-  useEffect(() => { const id = window.setInterval(() => setHeroSlide(current => (current + 1) % 6), 6200); return () => window.clearInterval(id); }, []);
+ async function submitAuth(e:FormEvent){
+  e.preventDefault();setBusy(true);setAuthMessage('');
+  try{
+   if(authMode==='signup'){
+    const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{data:{display_name:displayName.trim()}}});
+    if(error)throw error;
+    if(data.session){setAuthMessage('Account created. You are signed in.');}
+    else{setAuthMessage('Account created. Check your email to confirm your address, then sign in.');setAuthMode('signin')}
+   }else if(authMode==='reset'){
+    const {error}=await supabase.auth.resetPasswordForEmail(email.trim(),{redirectTo:window.location.origin});
+    if(error)throw error;setAuthMessage('If an account exists for this email, a password reset message has been sent.');
+   }else{
+    const {error}=await supabase.auth.signInWithPassword({email:email.trim(),password});
+    if(error)throw error;setAuthMessage('Signed in successfully.');
+   }
+  }catch(e){setAuthMessage(prettyError(e))}finally{setBusy(false)}
+ }
+ async function signOut(){await supabase.auth.signOut();setChoir(null);setSongs([]);setSelected(null);tell('You have signed out.')}
+ async function rotateInviteCode(){
+  if(!choir)return;
+  setBusy(true);
+  try{const {data,error}=await supabase.rpc('rvm_rotate_invite_code');if(error)throw error;setChoir({...choir,invite_code:data});tell('A new invite code was created. The old code no longer works.')}
+  catch(e){tell('Could not rotate invite code: '+prettyError(e))}
+  finally{setBusy(false)}
+ }
+ async function createChoir(e:FormEvent){
+  e.preventDefault();if(!choirName.trim())return;setBusy(true);
+  try{const {error}=await supabase.rpc('rvm_create_choir',{choir_name:choirName.trim(),choir_description:null});if(error)throw error;await loadWorkspace(user!);tell('Choir workspace created.');setChoirName('')}
+  catch(e){tell('Could not create choir: '+prettyError(e))}
+  finally{setBusy(false)}
+ }
+ async function joinChoir(e:FormEvent){
+  e.preventDefault();setBusy(true);
+  try{const {error}=await supabase.rpc('rvm_join_choir',{choir_invite_code:inviteCode.trim().toLowerCase()});if(error)throw error;await loadWorkspace(user!);tell('You have joined the choir.');setInviteCode('')}
+  catch(e){tell('Could not join choir: '+prettyError(e))}
+  finally{setBusy(false)}
+ }
+ async function addSong(e:FormEvent){
+  e.preventDefault();if(!choir||!user||!isManager)return;
+  if(!form.title.trim()){tell('Please enter a song title.');return}
+  setBusy(true);
+  try{
+   const {data,error}=await supabase.from('songs').insert({choir_id:choir.id,title:form.title.trim(),category:form.category,language:form.language.trim()||'English',lyrics:form.lyrics.trim()||null,composer:form.composer.trim()||null,arranger:form.arranger.trim()||null,created_by:user.id}).select('id').single();
+   if(error)throw error;
+   if(uploadFile){await uploadAttachment(data.id,uploadFile)}
+   if(form.lastPerformed){
+    const {error:historyError}=await supabase.from('song_performances').insert({choir_id:choir.id,song_id:data.id,performed_on:form.lastPerformed,event_name:form.event.trim()||'Choir performance',created_by:user.id});
+    if(historyError)throw historyError;
+   }
+   setShowAdd(false);setForm({title:'',category:'Hymns',language:'English',lyrics:'',composer:'',arranger:'',event:'',lastPerformed:''});setUploadFile(null);setCategory('All Songs');setQuery('');setActive('Library');await loadSongs();setSelected(data.id);tell('Song saved to your shared choir library.');
+  }catch(e){tell('Could not save song: '+prettyError(e))}
+  finally{setBusy(false)}
+ }
+ async function uploadAttachment(songId:string,file:File){
+  if(!choir||!user)throw new Error('Sign in and select a choir first.');
+  const allowed=['audio/mpeg','audio/mp4','audio/aac','audio/ogg','audio/wav','audio/x-wav','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain'].includes(file.type);
+  if(!allowed)throw new Error('Choose MP3, MP4/M4A, AAC, OGG, WAV, PDF, Word or text files.');
+  if(file.size>50*1024*1024)throw new Error('Files must be 50 MB or smaller.');
+  const path=choir.id+'/'+songId+'/'+crypto.randomUUID()+'-'+safeFilename(file.name);
+  const {error:uploadError}=await supabase.storage.from('rvm-choir-files').upload(path,file,{contentType:file.type,upsert:false});
+  if(uploadError)throw uploadError;
+  const kind=file.type.startsWith('audio/')?'audio':file.type==='application/pdf'?'score':'document';
+  const {error:rowError}=await supabase.from('song_files').insert({choir_id:choir.id,song_id:songId,storage_path:path,original_filename:file.name,mime_type:file.type||'application/octet-stream',file_size_bytes:file.size,kind,uploaded_by:user.id});
+  if(rowError){await supabase.storage.from('rvm-choir-files').remove([path]);throw rowError}
+ }
+ async function toggleFavorite(song:Song){
+  if(!user)return;
+  const previous=song.favorite;
+  setSongs(p=>p.map(x=>x.id===song.id?{...x,favorite:!previous}:x));
+  const result=previous?await supabase.from('song_favourites').delete().eq('song_id',song.id).eq('user_id',user.id):await supabase.from('song_favourites').insert({song_id:song.id,user_id:user.id});
+  if(result.error){setSongs(p=>p.map(x=>x.id===song.id?{...x,favorite:previous}:x));tell('Could not update favourite: '+result.error.message)}
+ }
+ async function getFileUrl(file:SongFile){
+  if(signedUrls[file.id])return signedUrls[file.id];
+  const {data,error}=await supabase.storage.from('rvm-choir-files').createSignedUrl(file.storage_path,60*60);
+  if(error)throw error;setSignedUrls(p=>({...p,[file.id]:data.signedUrl}));return data.signedUrl;
+ }
+ async function openFile(file:SongFile){
+  try{const url=await getFileUrl(file);window.open(url,'_blank','noopener,noreferrer')}catch(e){tell('Could not open file: '+prettyError(e))}
+ }
+ async function recordPerformance(e:FormEvent){
+  e.preventDefault();if(!chosen||!choir||!user)return;setBusy(true);
+  try{const {error}=await supabase.from('song_performances').insert({choir_id:choir.id,song_id:chosen.id,performed_on:new Date().toISOString().slice(0,10),event_name:performanceEvent.trim()||'Choir performance',created_by:user.id});if(error)throw error;setShowPerformance(false);setPerformanceEvent('');await loadSongs();tell('Performance history updated.')}
+  catch(e){tell('Could not record performance: '+prettyError(e))}finally{setBusy(false)}
+ }
+ const share=async(s:Song)=>{const text='RVM Choir · '+s.title+(s.composer?'\nComposer: '+s.composer:'')+(s.lyrics?'\n\n'+s.lyrics:'');try{if(navigator.share)await navigator.share({title:s.title,text});else{await navigator.clipboard.writeText(text);tell('Song details copied for sharing.')}}catch(e){if(e instanceof Error&&e.name!=='AbortError')tell('Could not share: '+e.message)}};
 
-  useEffect(() => {
-    let mounted = true;
-    supabase.auth.getSession().then(({ data }) => { if (mounted) setSession(data.session); });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
-    return () => { mounted = false; subscription.unsubscribe(); };
-  }, []);
+ if(!isRvmBackendConfigured)return <div className="auth-screen"><div className="auth-card backend-setup-card"><div className="brand-mark auth-mark"><Music2 size={24}/></div><p className="eyebrow-light">SAFE SETUP REQUIRED</p><h1>RVM Choir is being prepared.</h1><p className="auth-subtitle">The current Vercel settings still point to the former Bool Supabase project. To protect Bool's existing users and data, this preview has intentionally blocked database access.</p><div className="backend-checklist"><strong>Before opening the library</strong><ol><li>Create or confirm a dedicated RVM Choir Supabase project.</li><li>Apply the RVM Choir migration from the development branch.</li><li>Set this project's Vercel preview variables to that project's URL and publishable key.</li><li>Configure email confirmation and password recovery redirect URLs.</li></ol></div><p className="auth-footnote">No Bool database is being used by this preview. Production will not be switched until the backend and security checks pass.</p></div></div>;
+ if(authLoading)return <div className="auth-screen"><div className="auth-card"><div className="brand-mark auth-mark"><Music2 size={24}/></div><h1>RVM Choir</h1><p>Loading your secure choir workspace…</p></div></div>;
+ if(!user)return <div className="auth-screen"><div className="auth-card"><div className="brand-mark auth-mark"><Music2 size={24}/></div><p className="eyebrow-light">REAL TREATS TECHNOLOGIES</p><h1>{authMode==='signup'?'Join RVM Choir':authMode==='reset'?'Reset your password':'Welcome back'}</h1><p className="auth-subtitle">A shared home for your choir’s songs, lyrics, recordings and memories.</p><form onSubmit={submitAuth} className="auth-form">{authMode==='signup'&&<label>Your name<input value={displayName} onChange={e=>setDisplayName(e.target.value)} autoComplete="name" required placeholder="Full name"/></label>}<label>Email address<span className="auth-input"><Mail size={17}/><input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required placeholder="you@example.com"/></span></label>{authMode!=='reset'&&<label>Password<span className="auth-input"><LockKeyhole size={17}/><input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete={authMode==='signup'?'new-password':'current-password'} minLength={8} required placeholder="At least 8 characters"/></span></label>}{authMessage&&<div className="auth-message" role="status">{authMessage}</div>}<button className="primary-btn auth-submit" disabled={busy}>{busy?<RefreshCw size={17} className="spin"/>:null}{authMode==='signup'?'Create account':authMode==='reset'?'Send reset email':'Sign in'}</button></form><div className="auth-links">{authMode==='signin'&&<button onClick={()=>{setAuthMode('reset');setAuthMessage('')}}>Forgot password?</button>}{authMode!=='signin'&&<button onClick={()=>{setAuthMode('signin');setAuthMessage('')}}>Back to sign in</button>}{authMode!=='signup'&&<button onClick={()=>{setAuthMode('signup');setAuthMessage('')}}>Create an account</button>}</div><p className="auth-footnote">Your choir's library is private to its members. Use a real email address so you can confirm your account and recover access.</p></div></div>;
+ if(!choir)return <div className="auth-screen"><div className="auth-card workspace-setup"><div className="brand-mark auth-mark"><Music2 size={24}/></div><p className="eyebrow-light">ONE MORE STEP</p><h1>Your choir starts here.</h1><p className="auth-subtitle">Create a new choir workspace, or join one with an invite code from your choir director.</p><div className="setup-tabs"><button className={setupMode==='create'?'setup-tab active':'setup-tab'} onClick={()=>setSetupMode('create')}>Create a choir</button><button className={setupMode==='join'?'setup-tab active':'setup-tab'} onClick={()=>setSetupMode('join')}>Join a choir</button></div>{setupMode==='create'?<form className="auth-form" onSubmit={createChoir}><label>Choir or church name<input value={choirName} onChange={e=>setChoirName(e.target.value)} required minLength={2} maxLength={120} placeholder="e.g. Grace Voices Choir"/></label><button className="primary-btn auth-submit" disabled={busy}>{busy?'Creating…':'Create choir workspace'}</button></form>:<form className="auth-form" onSubmit={joinChoir}><label>Choir invite code<input value={inviteCode} onChange={e=>setInviteCode(e.target.value)} required minLength={8} placeholder="Paste the code shared by your director"/></label><button className="primary-btn auth-submit" disabled={busy}>{busy?'Joining…':'Join choir'}</button></form>}<button className="auth-secondary" onClick={signOut}><LogOut size={16}/> Sign out</button></div>{notice&&<div className="toast"><Check size={17}/>{notice}<button onClick={()=>setNotice('')} aria-label="Dismiss"><X size={15}/></button></div>}</div>;
 
-  useEffect(() => {
-    Promise.all([
-      supabase.from('cms_settings').select('value').eq('key','brand_logo_url').maybeSingle(),
-      supabase.from('bool_partners').select('id,name,description,logo_url,website_url,partner_type').eq('status','published').order('sort_order').limit(30)
-    ]).then(([settings,partners])=>{const value=settings.data?.value;setBrandLogoUrl(typeof value==='string'?value:typeof value?.url==='string'?value.url:'');setPublicPartners(partners.data??[]);});
-  }, []);
-
-  useEffect(() => {
-    supabase.from('cms_announcements').select('id,title,message').eq('status','published').eq('audience','all').order('created_at',{ascending:false}).limit(1).maybeSingle().then(({data}) => setLiveAnnouncement(data ?? null));
-  }, []);
-
-  useEffect(() => {
-    const match = window.location.pathname.match(/^\/pages\/([^/]+)\/?$/);
-    if (!match) return;
-    setPublicPageRoute(true);
-    const slug = decodeURIComponent(match[1]);
-    supabase.from('cms_pages').select('title,slug,excerpt,body_markdown,category,seo_title,seo_description,published_at').eq('slug', slug).eq('status', 'published').maybeSingle().then(({data}) => setPublicPage(data ?? null));
-  }, []);
-
-  useEffect(() => {
-    if (!session?.user) { setProfile(null); setSavedChecks([]); return; }
-    let cancelled = false;
-    const loadAccount = async () => {
-      const user = session.user;
-      const { data: existingProfile } = await supabase.from('profiles').select('display_name, role').eq('id', user.id).maybeSingle();
-      let currentProfile = existingProfile;
-      if (!currentProfile) {
-        const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'Bool user';
-        const { data: createdProfile, error } = await supabase.from('profiles').upsert({ id: user.id, display_name: displayName }, { onConflict: 'id' }).select('display_name, role').single();
-        if (error) { if (!cancelled) setNotice('Your account is signed in, but your profile could not be prepared. Please try again.'); }
-        else currentProfile = createdProfile;
-      }
-      const { data: checks } = await supabase.from('device_checks').select('id, device_model, imei_last4, created_at, observed_tests').order('created_at', { ascending: false }).limit(10);
-      if (!cancelled) { setProfile(currentProfile); setSavedChecks(checks ?? []); }
-    };
-    void loadAccount();
-    return () => { cancelled = true; };
-  }, [session?.user?.id]);
-
-  const openAuth = (mode: 'signin' | 'signup') => {
-    setAuthMode(mode); setAuthMessage(''); setAuthPassword(''); setAuthOpen(true);
-  };
-
-  const submitAuth = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); setAuthBusy(true); setAuthMessage('');
-    try {
-      if (authMode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email: authEmail.trim(), password: authPassword, options: { data: { display_name: authName.trim() }, emailRedirectTo: window.location.origin } });
-        if (error) throw error;
-        if (!data.session) setAuthMessage('Your account request is ready. Check your email for a confirmation link, then return here to sign in.');
-        else { setAuthMessage('Your Bool account has been created.'); setAuthOpen(false); }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email: authEmail.trim(), password: authPassword });
-        if (error) throw error;
-        setAuthOpen(false); setNotice('You are signed in to Bool.');
-      }
-    } catch (error) {
-      setAuthMessage(error instanceof Error ? error.message : 'We could not complete that request. Please try again.');
-    } finally { setAuthBusy(false); }
-  };
-
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) setNotice('Could not sign out. Please try again.');
-    else setNotice('You have signed out.');
-  };
-
-  const saveDeviceReport = async () => {
-    if (!session?.user) { setAuthMode('signin'); setAuthMessage('Sign in or create a Bool account to save your device-check report.'); setAuthOpen(true); return; }
-    if (!deviceModel.trim()) { setVerificationMessage('Enter the device make and model before saving this report.'); return; }
-    setSavingReport(true);
-    const digits = imei.replace(/\D/g, '');
-    const { error } = await supabase.from('device_checks').insert({
-      user_id: session.user.id, device_model: deviceModel.trim(),
-      imei_last4: digits.length >= 4 ? digits.slice(-4) : null,
-      imei_checksum_valid: validImei(imei), observed_tests: checkedTests,
-    });
-    setSavingReport(false);
-    if (error) { setNotice('We could not save this report. Please check your connection and try again.'); return; }
-    const { data: checks } = await supabase.from('device_checks').select('id, device_model, imei_last4, created_at, observed_tests').order('created_at', { ascending: false }).limit(10);
-    setSavedChecks(checks ?? []);
-    setNotice('Device-check report saved to your private Bool account. The full IMEI was not stored.');
-  };
-
-
-  const submitRepairRequest = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!session?.user) return;
-    setRepairBusy(true);
-    const { data, error } = await supabase.from('repair_jobs').insert({
-      customer_id: session.user.id,
-      device_model: repairModel.trim(),
-      issue_description: repairIssue.trim(),
-    }).select('id, device_model, issue_description, status, created_at').single();
-    setRepairBusy(false);
-    if (error) { setNotice('We could not submit your repair request. Please try again.'); return; }
-    setRepairJobs(current => [data, ...current]);
-    setRepairModel('');
-    setRepairIssue('');
-    setNotice('Your repair request has been saved. Technician matching is not yet automated.');
-  };
-
-  const openMarketplace = async () => {
-    setServicePanel('marketplace');
-    const { data } = await supabase.from('listings').select('id, title, category, description, price_ngn, condition, created_at').eq('status', 'published').order('created_at', { ascending: false }).limit(30);
-    setMarketListings(data ?? []);
-  };
-
-  const submitListing = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!session?.user) {
-      setServicePanel(null);
-      setAuthMode('signin');
-      setAuthMessage('Sign in or create a Bool account to publish a marketplace listing.');
-      setAuthOpen(true);
-      return;
-    }
-    const price = Number(listingPrice);
-    if (!Number.isFinite(price) || price < 0) { setNotice('Enter a valid price in Nigerian naira.'); return; }
-    setListingBusy(true);
-    const { data, error } = await supabase.from('listings').insert({
-      seller_id: session.user.id, title: listingTitle.trim(), category: listingCategory,
-      description: listingDescription.trim(), price_ngn: price, condition: listingCondition, status: 'published',
-    }).select('id, title, category, description, price_ngn, condition, created_at').single();
-    setListingBusy(false);
-    if (error) { setNotice('We could not publish this listing. Please check the details and try again.'); return; }
-    setMarketListings(current => [data, ...current]);
-    setListingTitle('');
-    setListingDescription('');
-    setListingPrice('');
-    setNotice('Your listing is live. Meet buyers safely and verify payment before handing over a device.');
-  };
-
-
-  const refreshMedia = async () => {
-    if (profile?.role !== 'admin') return;
-    setMediaBusy(true);
-    const { data, error } = await supabase.storage.from('bool-media').list('', { limit: 200, sortBy: { column: 'created_at', order: 'desc' } });
-    if (error) setNotice('Media library could not load. Check that the Bool media bucket migration has been applied.');
-    else setMediaFiles((data ?? []).filter(item => item.name !== '.emptyFolderPlaceholder') as typeof mediaFiles);
-    setMediaBusy(false);
-  };
-
-  const uploadMedia = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    if (!files.length || profile?.role !== 'admin') return;
-    setMediaBusy(true);
-    for (const file of files) {
-      if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) { setNotice('Only image files up to 10 MB each are allowed.'); continue; }
-      const safeName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, '-');
-      const path = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8) + '-' + safeName;
-      const { error } = await supabase.storage.from('bool-media').upload(path, file, { contentType: file.type, upsert: false });
-      if (error) setNotice('Could not upload ' + file.name + '. Confirm the media bucket and admin storage policies are active.');
-    }
-    event.target.value = '';
-    await refreshMedia();
-    setMediaBusy(false);
-  };
-
-  const deleteMedia = async (name: string) => {
-    if (profile?.role !== 'admin' || !window.confirm('Delete “' + name + '” from the media library? Any page using this file may stop displaying it.')) return;
-    const { error } = await supabase.storage.from('bool-media').remove([name]);
-    if (error) { setNotice('Media file could not be deleted.'); return; }
-    setNotice('Media file deleted.');
-    await refreshMedia();
-  };
-
-  const refreshAdminData = async () => {
-    if (profile?.role !== 'admin') { setNotice('Admin access is restricted to authorised Bool administrators.'); return; }
-    setAdminBusy(true);
-    const [profilesResult, checksResult, repairsResult, listingsResult, pagesResult, announcementsResult, settingsResult, auditResult] = await Promise.all([
-      supabase.from('profiles').select('id, display_name, role, created_at').order('created_at', { ascending: false }).limit(200),
-      supabase.from('device_checks').select('id, user_id, device_model, imei_last4, official_check_status, created_at').order('created_at', { ascending: false }).limit(200),
-      supabase.from('repair_jobs').select('id, device_model, issue_description, status, quote_ngn, created_at').order('created_at', { ascending: false }).limit(200),
-      supabase.from('listings').select('id, title, category, price_ngn, status, created_at').order('created_at', { ascending: false }).limit(200),
-      supabase.from('cms_pages').select('id,title,slug,excerpt,body_markdown,category,status,featured,seo_title,seo_description,updated_at').order('updated_at', { ascending: false }).limit(200),
-      supabase.from('cms_announcements').select('id,title,message,audience,status,created_at').order('created_at', { ascending: false }).limit(200),
-      supabase.from('cms_settings').select('key,value,description,updated_at').order('key').limit(200),
-      supabase.from('admin_audit_logs').select('id,action,resource_type,resource_id,created_at,actor_id').order('created_at', { ascending: false }).limit(100),
-    ]);
-    const errors = [profilesResult.error, checksResult.error, repairsResult.error, listingsResult.error, pagesResult.error, announcementsResult.error, settingsResult.error, auditResult.error].filter(Boolean);
-    if (errors.length) setNotice('Some admin records could not load. Check your admin permissions and refresh.');
-    setAdminProfiles(profilesResult.data ?? []);
-    setAdminChecks(checksResult.data ?? []);
-    setAdminRepairs(repairsResult.data ?? []);
-    setAdminListings(listingsResult.data ?? []);
-    setCmsPages(pagesResult.data ?? []);
-    setCmsAnnouncements(announcementsResult.data ?? []);
-    setCmsSettings(settingsResult.data ?? []);
-    setAuditLogs(auditResult.data ?? []);
-    setAdminBusy(false);
-  };
-
-  const editCmsPage = (page?: CmsPage) => {
-    if (!page) { setCmsEditingId(null); setCmsDraft(emptyCmsPage); return; }
-    setCmsEditingId(page.id);
-    setCmsDraft({ title: page.title, slug: page.slug, excerpt: page.excerpt || '', body_markdown: page.body_markdown || '', category: page.category || 'General', status: page.status, featured: page.featured, seo_title: page.seo_title || '', seo_description: page.seo_description || '' });
-  };
-
-  const saveCmsPage = async () => {
-    if (profile?.role !== 'admin' || !session?.user) { setNotice('Admin access required.'); return; }
-    const title = cmsDraft.title.trim();
-    const slug = (cmsDraft.slug.trim() || title.toLowerCase()).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    if (!title || !slug) { setNotice('Add a title before saving the page.'); return; }
-    setCmsSaving(true);
-    const payload = { ...cmsDraft, title, slug, updated_by: session.user.id, ...(cmsDraft.status === 'published' ? { published_at: new Date().toISOString() } : {}) };
-    const result = cmsEditingId
-      ? await supabase.from('cms_pages').update(payload).eq('id', cmsEditingId).select('id').maybeSingle()
-      : await supabase.from('cms_pages').insert({ ...payload, created_by: session.user.id }).select('id').maybeSingle();
-    setCmsSaving(false);
-    if (result.error) { setNotice(result.error.code === '23505' ? 'That page slug is already in use. Choose another.' : 'The CMS page could not be saved. Please retry.'); return; }
-    setNotice('CMS page saved.');
-    editCmsPage();
-    await refreshAdminData();
-  };
-
-  const deleteCmsPage = async (id: string) => {
-    if (profile?.role !== 'admin' || !window.confirm('Delete this CMS page permanently? This cannot be undone.')) return;
-    const { error } = await supabase.from('cms_pages').delete().eq('id', id);
-    if (error) { setNotice('Page could not be deleted.'); return; }
-    if (cmsEditingId === id) editCmsPage();
-    setNotice('CMS page deleted.');
-    await refreshAdminData();
-  };
-
-  const uploadBrandLogo = async (file: File | null) => {
-    if (!file || profile?.role !== 'admin' || !session?.user) return;
-    if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) { setNotice('Choose a logo image up to 5 MB.'); return; }
-    setBrandLogoUploading(true);
-    const safeName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g,'-');
-    const path = 'brand/brand-logo-' + Date.now() + '-' + safeName;
-    const uploaded = await supabase.storage.from('bool-media').upload(path,file,{contentType:file.type,upsert:false});
-    if (uploaded.error) { setBrandLogoUploading(false); setNotice('Logo upload failed. Check the public media bucket and admin upload permissions.'); return; }
-    const url = supabase.storage.from('bool-media').getPublicUrl(path).data.publicUrl;
-    const saved = await supabase.from('cms_settings').upsert({key:'brand_logo_url',value:url,description:'Public brand logo image URL. Admin can replace this from CMS.',updated_by:session.user.id,updated_at:new Date().toISOString()});
-    setBrandLogoUploading(false);
-    if (saved.error) { setNotice('Logo uploaded, but the CMS setting could not be saved. Please retry from Platform settings.'); return; }
-    setBrandLogoUrl(url); setNotice('BOOL logo updated across the public site.'); await refreshAdminData();
-  };
-
-  const updateProfileRole = async (userId: string, role: string) => {
-    if (profile?.role !== 'admin' || !['customer','dealer','technician','dispatcher','law_enforcement','admin'].includes(role)) return;
-    const { error } = await supabase.from('profiles').update({role,updated_at:new Date().toISOString()}).eq('id',userId);
-    if (error) { setNotice('Role could not be changed. Confirm admin permissions and retry.'); return; }
-    setNotice('Account role updated. Premium access now follows this verified role.'); await refreshAdminData();
-  };
-
-  const saveCmsSetting = async () => {
-    if (profile?.role !== 'admin' || !session?.user || !settingKey.trim()) return;
-    let parsedValue: unknown;
-    try { parsedValue = JSON.parse(settingValue); } catch { parsedValue = settingValue; }
-    const { error } = await supabase.from('cms_settings').upsert({ key: settingKey.trim(), value: parsedValue, description: settingDescription.trim(), updated_by: session.user.id, updated_at: new Date().toISOString() });
-    if (error) { setNotice('Setting could not be saved.'); return; }
-    setSettingKey(''); setSettingValue(''); setSettingDescription('');
-    setNotice('Platform setting saved.');
-    await refreshAdminData();
-  };
-
-  const createAnnouncement = async () => {
-    if (profile?.role !== 'admin' || !session?.user || !announcementTitle.trim() || !announcementMessage.trim()) { setNotice('Add an announcement title and message.'); return; }
-    setAnnouncementBusy(true);
-    const { error } = await supabase.from('cms_announcements').insert({ title: announcementTitle.trim(), message: announcementMessage.trim(), audience: announcementAudience, status: announcementStatus, created_by: session.user.id });
-    setAnnouncementBusy(false);
-    if (error) { setNotice('Announcement could not be created.'); return; }
-    setAnnouncementTitle(''); setAnnouncementMessage(''); setAnnouncementAudience('all'); setAnnouncementStatus('draft');
-    setNotice('Announcement created.');
-    await refreshAdminData();
-  };
-
-  const updateAnnouncementStatus = async (id: string, status: string) => {
-    if (profile?.role !== 'admin') return;
-    const { error } = await supabase.from('cms_announcements').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
-    if (error) { setNotice('Announcement status could not be updated.'); return; }
-    await refreshAdminData();
-  };
-
-  const openAdminConsole = async () => {
-    if (profile?.role !== 'admin') { setNotice('Admin access is restricted to authorised Bool administrators.'); return; }
-    setAdminOpen(true);
-    setAdminTab('overview');
-    await refreshAdminData();
-    await refreshMedia();
-  };
-
-  const updateAdminRecord = async (table: 'device_checks' | 'repair_jobs' | 'listings', id: string, field: string, value: string) => {
-    if (profile?.role !== 'admin') { setNotice('You do not have permission to make that change.'); return; }
-    const { error } = await supabase.from(table as any).update({ [field]: value } as any).eq('id', id);
-    if (error) { setNotice('The change could not be saved. Confirm the admin role and database permissions.'); return; }
-    setNotice('Admin change saved.');
-    await refreshAdminData();
-  };
-
-  const filtered = services.filter(s => (active === 'All services' || s.tag.toLowerCase().includes(active.toLowerCase().split(' ')[0])) && (s.title + s.detail + s.tag).toLowerCase().includes(query.toLowerCase()));
-  const openBoolOrder = (context: BoolOrderContext) => {
-    setOrderReference('');
-    setOrderWhatsAppUrl('');
-    setOrderContext({...context, url: context.url || window.location.href});
-    setOrderQuantity('1');
-    setOrderNote('');
-    setOrderOpen(true);
-  };
-
-  const submitBoolOrder = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!orderCustomerName.trim() || !orderPhone.trim() || orderSubmitting) return;
-    setOrderSubmitting(true);
-    const generatedReference = 'BOOL-' + crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
-    const { error } = await supabase.from('bool_orders').insert({
-      order_reference: generatedReference,
-      customer_id: session?.user?.id ?? null,
-      customer_name: orderCustomerName.trim(),
-      customer_phone: orderPhone.trim(),
-      customer_location: orderLocation.trim() || null,
-      order_type: orderContext.kind,
-      product_id: orderContext.product_id || null,
-      item_title: orderContext.title.trim(),
-      item_model: orderContext.model || null,
-      item_condition: orderContext.condition || null,
-      item_price_ngn: orderContext.kind === 'product' && typeof orderContext.price === 'number' ? orderContext.price : null,
-      item_image_url: orderContext.image || null,
-      item_url: orderContext.url || window.location.href,
-      item_description: orderContext.description || null,
-      quantity: orderContext.kind === 'product' ? Math.max(1, Math.min(99, Number(orderQuantity) || 1)) : 1,
-      customer_note: orderNote.trim() || null,
-      status: 'new'
-    });
-    setOrderSubmitting(false);
-    if (error) {
-      setNotice('Your request could not be saved just now. Please check your connection and try again. Your request has not been submitted.');
-      return;
-    }
-    const lines = [
-      'Hello BOOL Team, I have submitted an order/request on BOOL.',
-      'Order reference: ' + generatedReference,
-      '',
-      'ITEM OR SERVICE',
-      'Name: ' + orderContext.title,
-      orderContext.kind === 'product' && orderContext.model ? 'Model: ' + orderContext.model : '',
-      orderContext.kind === 'product' && orderContext.category ? 'Category: ' + orderContext.category : '',
-      orderContext.kind === 'product' && orderContext.condition ? 'Condition: ' + orderContext.condition : '',
-      orderContext.kind === 'product' && typeof orderContext.price === 'number' ? 'Listed price: ₦' + orderContext.price.toLocaleString('en-NG') + ' (please confirm availability and final price)' : '',
-      orderContext.url ? 'Bool link: ' + orderContext.url : '',
-      orderContext.image ? 'Product image: ' + orderContext.image : '',
-      orderContext.description ? 'Details: ' + orderContext.description : '',
-      '',
-      'CUSTOMER DETAILS',
-      'Name: ' + orderCustomerName.trim(),
-      'Phone / WhatsApp: ' + orderPhone.trim(),
-      orderContext.kind === 'product' ? 'Quantity: ' + (orderQuantity || '1') : '',
-      orderLocation.trim() ? 'Location / delivery area: ' + orderLocation.trim() : '',
-      orderNote.trim() ? 'Additional note: ' + orderNote.trim() : '',
-      '',
-      'This request is already recorded in BOOL. Please confirm the next step before payment.'
-    ].filter(Boolean);
-    setOrderReference(generatedReference);
-    setOrderWhatsAppUrl('https://wa.me/2348069929435?text=' + encodeURIComponent(lines.join('\n')));
-    setNotice('Request saved to BOOL. Reference: ' + generatedReference);
-  };
-
-  const choose = (title: string) => {
-    if (title === 'Check a phone') { setVerificationOpen(true); setNotice(''); return; }
-    if (title === 'Sign in') { openAuth('signin'); return; }
-    if (title === 'Create account') { openAuth('signup'); return; }
-    if (title === 'Find a technician' || title === 'Find a business' || title === 'Technician Workbench') { setCustomerHubTab('providers'); setNotice(''); return; }
-    if (title === 'Explore devices') { const target=document.getElementById('devices'); if(target) target.scrollIntoView({behavior:'smooth'}); else setNotice('Device listings will appear here when published by RealTreats Technologies.'); return; }
-    if (title === 'Explore the market') { void openMarketplace(); return; }
-    if (title === 'Contact RealTreats') { setCustomerHubTab('support'); setNotice(''); return; }
-    if (title === 'Payments & disputes') { setCustomerHubTab('payments'); setNotice(''); return; }
-    setNotice(title + ' is not available yet. Please contact RealTreats Technologies for help.');
-  };
-  const validImei = (value: string) => {
-    const digits = value.replace(/\D/g, '');
-    if (digits.length !== 15) return false;
-    let sum = 0;
-    for (let i = 0; i < digits.length; i++) {
-      let n = Number(digits[i]);
-      if (i % 2 === 1) { n *= 2; if (n > 9) n -= 9; }
-      sum += n;
-    }
-    return sum % 10 === 0;
-  };
-  const deviceTests = ['Screen and touch response', 'Cameras and flash', 'Speaker and microphone', 'Buttons and vibration', 'Charging port and cable', 'Wi-Fi, Bluetooth and cellular signal', 'Face ID / fingerprint sensor (where available)'];
-  if (publicPageRoute) return <div className="public-cms-page"><header><Brand logoUrl={brandLogoUrl}/><div className="public-page-header-actions">{publicPage&&(publicPage.slug==='about'||publicPage.slug==='contact')&&<button className="btn btn-small" onClick={()=>void shareBoolPage(publicPage.slug==='contact'?'contact':'about',publicPage.title)}><Share2 size={14}/> Share page</button>}<a href="/" className="btn btn-dark btn-small">Back to Bool</a></div></header>{publicPage ? <article><div className="eyebrow dark-eyebrow">{publicPage.category || 'BOOL GUIDE'}</div><h1>{publicPage.title}</h1>{publicPage.excerpt && <p className="public-cms-excerpt">{publicPage.excerpt}</p>}<div className="public-cms-body"><MarkdownRenderer content={publicPage.body_markdown}/></div><small>Published {publicPage.published_at ? new Date(publicPage.published_at).toLocaleDateString() : ''}</small></article> : <article><h1>Page not found</h1><p>This page may be unpublished or the link may have changed.</p><a href="/">Return to Bool</a></article>}</div>;
-  return <div className="app-shell">{liveAnnouncement && !announcementDismissed && <div className="live-announcement"><div><strong>{liveAnnouncement.title}</strong><span>{liveAnnouncement.message}</span></div><button onClick={() => setAnnouncementDismissed(true)} aria-label="Dismiss announcement"><X size={15}/></button></div>}
-    <header className="topbar"><Brand logoUrl={brandLogoUrl}/><nav className={menuOpen ? 'nav nav-open' : 'nav'}><a href="#services" onClick={() => setMenuOpen(false)}>Explore</a><button type="button" className="nav-link-button" onClick={() => { setCustomerHubTab('providers'); setMenuOpen(false); }}>Verified providers <BadgeCheck size={14}/></button><button type="button" className="nav-link-button" onClick={() => { if(!session){openAuth('signin');return;} setCustomerHubTab('requests'); setMenuOpen(false); }}>My requests <ClipboardCheck size={14}/></button><a href="#how" onClick={() => setMenuOpen(false)}>How Bool works</a><a href="#trust" onClick={() => setMenuOpen(false)}>Trust & safety</a><a href="#payments" onClick={() => setMenuOpen(false)}>Payments</a></nav><div className="top-actions">{session ? <>{profile?.role === 'admin' && <button className="btn btn-lime btn-small" onClick={() => void openAdminConsole()}><ShieldCheck size={14}/> Admin console</button>}<button className="text-button" onClick={() => setCustomerHubTab('requests')}>{profile?.display_name || session.user.email || 'My Bool'}</button><button className="btn btn-dark btn-small" onClick={signOut}>Sign out</button></> : <><button className="text-button" onClick={() => choose('Sign in')}>Sign in</button><button className="btn btn-dark btn-small" onClick={() => choose('Create account')}>Get started <ArrowUpRight size={15}/></button></>}</div><button className="mobile-menu" aria-label="Toggle menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X/> : <Menu/>}</button></header>
-    <main>
-      <section className="hero"><div className="hero-glow glow-one"/><div className="hero-copy"><div className="hero-announcement-slider" aria-label="Welcome and benefits for different Bool users">
-<div className="hero-slide-photo"><img src={['https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=85','https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=900&q=85','https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=900&q=85','https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=900&q=85','https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=900&q=85','https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=900&q=85'][heroSlide]} alt={['Customer completing a digital transaction','Technician working with electronics','Business owner using digital payment tools','Motorcycle delivery service','Team collaborating on business technology','Technology professionals working together'][heroSlide]} loading="eager"/></div>
-<div className="hero-slide-copy"><span className="hero-slide-audience">{['FOR EVERYDAY USERS','FOR VERIFIED TECHNICIANS','FOR PHONE DEALERS','FOR DESPATCHERS','BOOL PREMIUM WORKSPACES','FOR TRUST & PUBLIC SAFETY'][heroSlide]}</span><span className="hero-slide-count">0{heroSlide+1} / 06</span><strong>{['Buy and sell with more confidence','Turn your skills into managed service jobs','Run your device business with advanced POS','Deliver devices with a clear chain of custody','One platform. Three professional workspaces.','Build a clearer trail for device transactions'][heroSlide]}</strong><p>{['Explore device records, request help and keep a traceable reference for every transaction.','Receive assigned jobs, manage service stages, record customer updates and close work professionally.','Record sales, issue references, keep device transaction histories and provide clearer customer receipts.','Manage assigned pickups, delivery status, contact details and proof-of-delivery records.','Premium tools for dealer sales, technician service delivery and despatch management, with access controlled by verified roles.','BOOL is designed to strengthen trust and accountability. Device-history disclosures require an authorised request and BOOL review.'][heroSlide]}</p><button aria-label="Next information banner" onClick={() => setHeroSlide(current => (current+1)%6)}><ArrowRight size={16}/></button></div>
-<div className="hero-slide-dots">{[0,1,2,3,4,5].map(i=><button key={i} aria-label={'Show banner '+(i+1)} className={heroSlide===i?'active':''} onClick={() => setHeroSlide(i)}/>)}</div></div><div className="eyebrow"><span className="pulse"/> BUILT FOR THE MOBILE WORLD <span className="eyebrow-line"/></div><h1>Find trusted tech services.<br/><span>We help make it right.</span></h1><p className="hero-lede">Find technicians and technology businesses reviewed by RealTreats Technologies. Request a service, pay through Bool’s managed process, and contact our team if something goes wrong.</p><div className="hero-ctas"><a className="btn btn-lime" href="#services">Explore Bool <ArrowRight size={17}/></a><a className="secondary-link" href="#how">See how it works ↗</a></div><div className="proof-row"><div className="proof-avatars"><span>U</span><span>T</span><span>D</span><b>+</b></div><div><strong>Made for real-world mobile needs</strong><small>For dealers, technicians and everyday users.</small></div></div></div>
-      <div className="hero-visual"><div className="orbit orbit-a"/><div className="orbit orbit-b"/><div className="phone-back"><i/><i/><i className="small-cam"/></div><div className="scan-ring"><div className="scan-core"><ShieldCheck size={43}/></div></div><div className="float-card verified-card"><div className="card-icon"><BadgeCheck size={20}/></div><div><strong>Device report</strong><span>Clear checks. Clear limits.</span></div><span className="mini-check"><Check size={13}/></span></div><div className="float-card ai-card"><div className="ai-spark"><Sparkles size={17}/></div><div><strong>Bool intelligence</strong><span>Helpful, not guesswork.</span></div></div><div className="visual-caption"><span className="caption-dot"/> TRUST STARTS WITH WHAT YOU CAN VERIFY</div></div>
-      <div className="hero-bottom"><span>01 / A BETTER WAY TO MOBILE</span><span>BUILT FOR PEOPLE WHO KEEP THE WORLD CONNECTED <ArrowUpRight size={13}/></span></div></section>
-      <section className="partners-carousel-section" aria-label="BOOL partners and sponsors"><div className="partners-carousel-heading"><div><div className="eyebrow dark-eyebrow">BUILDING TRUST TOGETHER</div><h2>In partnership with our technology community</h2><p>Associations, public institutions and industry partners helping strengthen Akwa Ibom’s digital ecosystem.</p></div><span className="partners-managed-note"><ShieldCheck size={14}/> Managed in BOOL CMS</span></div><div className="partners-logo-track">{publicPartners.map(partner=><a key={partner.id} className="partner-logo-card" href={partner.website_url||'#partners'} target={partner.website_url?'_blank':undefined} rel={partner.website_url?'noreferrer':undefined} title={partner.description||partner.name}>{partner.logo_url?<img src={partner.logo_url} alt={partner.name} loading="lazy"/>:<span className="partner-logo-fallback">{partner.name.split(' ').map(w=>w[0]).slice(0,3).join('').toUpperCase()}</span>}<span><strong>{partner.name}</strong><small>{partner.partner_type.replace(/_/g,' ')}</small></span></a>)}</div><p className="partners-disclaimer">Partner names are shown as listed in the BOOL CMS. Display does not imply formal government endorsement unless separately confirmed.</p></section>
-      {session && <PremiumWorkspaces userId={session.user.id} role={(['admin','dealer','technician','dispatcher','law_enforcement'].includes(profile?.role||'') ? profile!.role : 'customer')} onNotice={setNotice}/>}
-      <PublicShowcase section="devices" onOrder={openBoolOrder}/>
-      <section className="services-section" id="services"><div className="section-head"><div><div className="eyebrow dark-eyebrow">ONE PLATFORM. MORE POSSIBILITIES.</div><h2>What do you need<br className="desktop-break"/> to get done?</h2></div><p>Whether you need a repair, a reliable business, or a new device, Bool puts customer support and clear information first.</p></div>
-      <div className="service-tools"><div className="service-tabs">{['All services','Repair & service','Verified network','Devices & prices'].map(tab => <button key={tab} className={active === tab ? 'tab active' : 'tab'} onClick={() => setActive(tab)}>{tab}</button>)}</div><label className="search-box"><Search size={17}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search Bool services" aria-label="Search Bool services"/><kbd>⌘ K</kbd></label></div>
-      <div className="service-grid">{filtered.map((service) => { const Icon = service.icon; return <button className="service-card" key={service.title} onClick={() => choose(service.title)}><div className="service-card-top"><span className="service-icon"><Icon size={21}/></span><ArrowUpRight className="card-arrow" size={19}/></div><span className="service-tag">{service.tag}</span><h3>{service.title}</h3><p>{service.detail}</p><span className="card-bottom">Explore service <ArrowRight size={15}/></span>{service.title === 'Ask Bool AI' && <span className="coming-pill">IN DEVELOPMENT</span>}</button> })}</div></section>
-      <section className="workbench" id="how"><div className="workbench-art"><div className="workbench-grid"/><div className="device-outline"><Smartphone size={94}/><div className="device-check"><Check size={19}/></div></div><div className="data-chip chip-top"><Cpu size={16}/> Diagnostics</div><div className="data-chip chip-bottom"><BatteryCharging size={16}/> Device health</div></div><div className="workbench-copy"><div className="eyebrow">FOR THE PEOPLE BEHIND THE REPAIR</div><h2>A better workbench.<br/><span>A better outcome.</span></h2><p>Technicians deserve more than scattered chats and handwritten notes. Bool is designed to bring repair jobs, customer approvals, diagnostics, parts and updates into one organised workflow.</p><ul><li><Check size={16}/> Job cards and repair status</li><li><Check size={16}/> Quotes, approvals and customer updates</li><li><Check size={16}/> Device history and parts tracking</li></ul><button className="btn btn-lime" onClick={() => choose('Technician Workbench')}>Explore technician tools <ArrowRight size={16}/></button></div></section>
-      <section className="trust-section" id="trust"><div className="trust-icon"><ClipboardCheck size={27}/></div><div><div className="eyebrow dark-eyebrow">CUSTOMER PROTECTION</div><h2>We stay involved when it matters.</h2><p>RealTreats Technologies operates Bool, reviews providers before approval, and gives customers a clear route to ask questions, report problems and request a fair review. Verification badges will reflect checks actually completed.</p></div><div className="trust-points"><span><Check size={15}/> Provider review before public listing</span><span><Check size={15}/> A clear customer complaint channel</span><span><Check size={15}/> Payment confirmation by RealTreats</span></div></section>
-      <section className="payment-info-section" id="payments"><div className="payment-info-copy"><div className="eyebrow dark-eyebrow">PAYMENTS WITH A CLEAR RECORD</div><h2>Pay RealTreats Technologies.<br/>Keep your request reference.</h2><p>For manual bank transfers, use the account below only after Bool or our team confirms your service request and amount. RealTreats Technologies must verify receipt before a payment is marked confirmed. Never rely on a provider’s screenshot as payment confirmation.</p><div className="payment-note"><ShieldCheck size={18}/><span>Pay only for a confirmed Bool request. Keep your transfer receipt and request reference for support.</span></div></div><div className="payment-account-card"><span className="payment-account-label">BANK TRANSFER DETAILS</span><small>Bank</small><strong>Moniepoint MFB</strong><small>Account name</small><strong>RealTreats Technologies</strong><small>Account number</small><div className="account-number-row"><strong>6263388058</strong><button className="btn btn-lime btn-small" onClick={() => { void navigator.clipboard?.writeText('6263388058').then(() => setNotice('Account number copied.')).catch(() => setNotice('Account number: 6263388058')); }}>Copy number</button></div><div className="payment-status-note">Paystack integration: coming later. Online card payments are not enabled yet.</div></div></section><PublicShowcase section="social"/><section className="digital-akwa-section"><div className="digital-akwa-copy"><div className="eyebrow dark-eyebrow">A SAFER DIGITAL AKWA IBOM</div><h2>Building on Akwa Ibom’s digital progress</h2><p>We commend the Akwa Ibom State Government under Governor Pastor Umo Eno and the Honourable Commissioner for Science & Digital Economy, Dr. Frank Ekpenyong, for advancing practical digital services and connectivity. The state government reports digital workflows for public programmes and employment, and its August 2026 announcement of high-speed internet infrastructure at Victor Attah International Airport is another important step towards a more connected economy.</p><p>BOOL shares that direction at the level of everyday device transactions: helping dealers keep sales records, technicians document service work, despatchers track handovers, and customers retain useful references. With proper legal authority and human review, a future authorised workflow could help the Nigeria Police Force follow device transaction histories relevant to an investigation. BOOL does not give law enforcement automatic access or independently certify ownership or blacklist status.</p><a className="secondary-link digital-akwa-source" href="https://akwaibomstate.gov.ng/aibom-switches-on-digital-internet-backbone-at-victor-attah-international-airport/" target="_blank" rel="noreferrer">Read the State Government’s digital connectivity announcement <ArrowUpRight size={14}/></a></div><div className="digital-akwa-highlights"><div><span>01</span><strong>Digital public services</strong><small>Making everyday government processes more traceable.</small></div><div><span>02</span><strong>Connected economy</strong><small>Connectivity that can help businesses and innovators grow.</small></div><div><span>03</span><strong>Accountable device trade</strong><small>Clear sales, service and delivery records, with privacy safeguards.</small></div></div></section><section className="closing-cta" id="support"><div><div className="eyebrow">REAL PEOPLE. REAL SUPPORT.</div><h2>Need help with a service<br/>or have a concern?</h2><p>Contact RealTreats Technologies and tell us your Bool request reference. We will help you understand the next step.</p><p className="closing-contact-line"><Phone size={15}/> 08069929435 <span>·</span> <MapPin size={15}/> 6 Oron Road Uyo Plaza, Akwa Ibom State</p></div><button onClick={() => openBoolOrder({kind:'support',title:'General order or support enquiry',description:'Customer would like the BOOL team to assist.'})} className="btn btn-lime">Contact customer support <ArrowRight size={16}/></button><div className="closing-orb"/></section>
-    </main>
-    <footer><div className="footer-main"><Brand light logoUrl={brandLogoUrl}/><p>Clarity for every device.<br/>Tools for everyone who keeps them working.</p><div className="footer-links"><a href="#services">Explore services</a><a href="#trust">Customer protection</a><a href="#payments">Payment details</a><a href="/share/page/about">About Bool</a><a href="/share/page/contact">Contact Bool</a><button type="button" className="footer-share-button" onClick={()=>void shareBoolPage('about','About Bool')}><Share2 size={13}/> Share About</button><button type="button" className="footer-share-button" onClick={()=>void shareBoolPage('contact','Contact Bool')}><Share2 size={13}/> Share Contact</button><a href="/pages/terms-and-conditions">Terms & Conditions</a><a href="/pages/privacy-policy">Privacy Policy</a><a href="https://github.com/ubonguiux/bool" target="_blank" rel="noreferrer">GitHub <ArrowUpRight size={13}/></a></div></div><div className="footer-bottom"><span>© {new Date().getFullYear()} Bool. Owned and operated by RealTreats Technologies.</span><span><Phone size={13}/> <a href="tel:08069929435">08069929435</a> · 6 Oron Road Uyo Plaza, Akwa Ibom State</span></div></footer>
-    {servicePanel && <div className="modal-backdrop" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setServicePanel(null); }}><section className="verification-modal service-modal" role="dialog" aria-modal="true" aria-labelledby="service-panel-title"><div className="verification-head"><div><div className="eyebrow dark-eyebrow">{servicePanel === 'repair' ? 'BOOL REPAIR DESK' : 'BOOL MARKETPLACE'}</div><h2 id="service-panel-title">{servicePanel === 'repair' ? 'Request a device repair' : 'Explore mobile listings'}</h2><p>{servicePanel === 'repair' ? 'Describe the issue and keep a record of your repair request.' : 'Browse published offers or create a listing for a device you are authorised to sell.'}</p></div><button className="help-close" onClick={() => setServicePanel(null)} aria-label="Close service panel"><X size={18}/></button></div>{servicePanel === 'repair' ? <><form onSubmit={submitRepairRequest}><label className="verification-label" htmlFor="repair-model">Device make and model</label><input className="verification-input" id="repair-model" value={repairModel} onChange={e => setRepairModel(e.target.value)} placeholder="e.g. Samsung Galaxy A54" required/><label className="verification-label" htmlFor="repair-issue">What needs fixing?</label><textarea className="verification-input service-textarea" id="repair-issue" value={repairIssue} onChange={e => setRepairIssue(e.target.value)} placeholder="Describe the fault, symptoms and any damage..." minLength={8} required/><button className="btn btn-dark verification-submit" type="submit" disabled={repairBusy}>{repairBusy ? 'Submitting…' : 'Submit repair request'} <ArrowRight size={16}/></button></form><div className="saved-reports"><strong>Your recent repair requests</strong>{repairJobs.length ? repairJobs.map(job => <div className="saved-report-row" key={job.id}><span>{job.device_model} · {job.status.replace('_',' ')}</span><small>{job.issue_description} · {new Date(job.created_at).toLocaleDateString()}</small></div>) : <p className="empty-service-state">No repair requests yet. Your first request will appear here.</p>}</div><p className="verification-hint">This records your request; automated technician matching, quotes and in-app messaging are not active yet.</p></> : <><div className="market-listings">{marketListings.length ? marketListings.map(item => <article className="market-listing" key={item.id}><div className="market-listing-top"><span className="service-tag">{item.category.replace('_',' ').toUpperCase()} · {item.condition.replace('_',' ').toUpperCase()}</span><strong>₦{Number(item.price_ngn).toLocaleString('en-NG')}</strong></div><h3>{item.title}</h3><p>{item.description || 'No description provided.'}</p><small>Listed {new Date(item.created_at).toLocaleDateString()}</small></article>) : <p className="empty-service-state">No published listings yet. Be the first to post an offer.</p>}</div><form onSubmit={submitListing} className="listing-form"><strong>Create a marketplace listing</strong><label className="verification-label" htmlFor="listing-title">Listing title</label><input className="verification-input" id="listing-title" value={listingTitle} onChange={e => setListingTitle(e.target.value)} placeholder="e.g. iPhone 13 Pro 128GB" required/><div className="service-form-grid"><div><label className="verification-label" htmlFor="listing-category">Category</label><select className="verification-input" id="listing-category" value={listingCategory} onChange={e => setListingCategory(e.target.value)}><option value="phone">Phone</option><option value="accessory">Accessory</option><option value="tablet">Tablet</option><option value="other">Other</option></select></div><div><label className="verification-label" htmlFor="listing-condition">Condition</label><select className="verification-input" id="listing-condition" value={listingCondition} onChange={e => setListingCondition(e.target.value)}><option value="new">New</option><option value="like_new">Like new</option><option value="used">Used</option><option value="for_parts">For parts</option></select></div></div><label className="verification-label" htmlFor="listing-price">Price (NGN)</label><input className="verification-input" id="listing-price" type="number" min="0" step="1" value={listingPrice} onChange={e => setListingPrice(e.target.value)} placeholder="e.g. 250000" required/><label className="verification-label" htmlFor="listing-description">Description</label><textarea className="verification-input service-textarea" id="listing-description" value={listingDescription} onChange={e => setListingDescription(e.target.value)} placeholder="Describe condition, accessories and any known issues..." required/><button className="btn btn-dark verification-submit" type="submit" disabled={listingBusy}>{listingBusy ? 'Publishing…' : 'Publish listing'} <ArrowRight size={16}/></button></form><p className="verification-hint">Bool does not process payments or guarantee sellers. Meet safely and confirm the device and payment before completing a sale.</p></>}</section></div>}
-    {adminOpen && profile?.role === 'admin' && <div className="modal-backdrop admin-backdrop" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setAdminOpen(false); }}><section className="verification-modal admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-title"><div className="verification-head"><div><div className="eyebrow dark-eyebrow">BOOL ADMINISTRATION</div><h2 id="admin-title">Admin console</h2><p>Review accounts, device reports, repair requests and marketplace listings.</p></div><button className="help-close" onClick={() => setAdminOpen(false)} aria-label="Close admin console"><X size={18}/></button></div><div className="admin-toolbar"><div className="admin-tabs">{([{id:'overview',label:'Overview'},{id:'users',label:'Users'},{id:'devices',label:'Device reports'},{id:'repairs',label:'Repairs'},{id:'listings',label:'Listings'},{id:'operations',label:'Customer operations'},{id:'cms',label:'Pages & policies'},{id:'catalog',label:'Content studio'},{id:'media',label:'Media library'},{id:'announcements',label:'Announcements'},{id:'settings',label:'Settings'},{id:'audit',label:'Audit log'}] as const).map(tab => <button key={tab.id} className={adminTab === tab.id ? 'admin-tab active' : 'admin-tab'} onClick={() => setAdminTab(tab.id)}>{tab.label}</button>)}</div><button className="btn btn-dark btn-small" onClick={() => void refreshAdminData()} disabled={adminBusy}>{adminBusy ? 'Refreshing…' : 'Refresh data'}</button></div>{adminTab === 'overview' ? <><div className="admin-stat-grid"><button onClick={() => setAdminTab('users')}><span>Registered profiles</span><strong>{adminProfiles.length}</strong><small>View account records</small></button><button onClick={() => setAdminTab('devices')}><span>Device reports</span><strong>{adminChecks.length}</strong><small>Review submitted checks</small></button><button onClick={() => setAdminTab('repairs')}><span>Repair requests</span><strong>{adminRepairs.length}</strong><small>Manage job statuses</small></button><button onClick={() => setAdminTab('listings')}><span>Marketplace listings</span><strong>{adminListings.length}</strong><small>Moderate published offers</small></button></div><div className="admin-note"><ShieldCheck size={18}/><p><strong>Protected admin access</strong><br/>This console appears only when the signed-in profile has the server-controlled admin role. Record access is also checked by Supabase row-level security.</p></div></> : adminTab === 'users' ? <div className="admin-record-list"><div className="admin-role-guidance"><ShieldCheck size={16}/><span>Grant dealer, technician and dispatcher roles only after checking identity and relevant business or work details. Law-enforcement access requires official verification and remains subject to case-by-case review.</span></div>{adminProfiles.map(user => <article className="admin-record" key={user.id}><div><strong>{user.display_name || 'Bool user'}</strong><p>{user.role} · Joined {new Date(user.created_at).toLocaleDateString()}</p><small>ID: {user.id}</small></div><label className="admin-select-label">Account role<select className="verification-input admin-select" value={user.role} disabled={user.id===session?.user.id} onChange={e=>void updateProfileRole(user.id,e.target.value)}>{['customer','dealer','technician','dispatcher','law_enforcement','admin'].map(role=><option key={role} value={role}>{role.replace(/_/g,' ')}</option>)}</select></label></article>)}{!adminProfiles.length && <p className="empty-service-state">No profile records found yet.</p>}</div> : adminTab === 'devices' ? <div className="admin-record-list">{adminChecks.map(item => <article className="admin-record" key={item.id}><div><strong>{item.device_model}</strong><p>IMEI ending {item.imei_last4 || 'not supplied'} · {new Date(item.created_at).toLocaleDateString()}</p><small>Account ID: {item.user_id}</small></div><label className="admin-select-label">Official status<select className="verification-input admin-select" value={item.official_check_status} onChange={e => void updateAdminRecord('device_checks', item.id, 'official_check_status', e.target.value)}><option value="not_checked">Not checked</option><option value="needs_review">Needs review</option><option value="verified">Verified</option><option value="failed">Failed</option></select></label></article>)}{!adminChecks.length && <p className="empty-service-state">No device reports submitted yet.</p>}</div> : adminTab === 'repairs' ? <div className="admin-record-list">{adminRepairs.map(job => <article className="admin-record" key={job.id}><div><strong>{job.device_model}</strong><p>{job.issue_description}</p><small>Submitted {new Date(job.created_at).toLocaleDateString()} · {job.quote_ngn == null ? 'No quote' : '₦' + Number(job.quote_ngn).toLocaleString('en-NG')}</small></div><label className="admin-select-label">Job status<select className="verification-input admin-select" value={job.status} onChange={e => void updateAdminRecord('repair_jobs', job.id, 'status', e.target.value)}>{['requested','quoted','approved','in_progress','waiting_parts','completed','cancelled'].map(status => <option key={status} value={status}>{status.replace('_',' ')}</option>)}</select></label></article>)}{!adminRepairs.length && <p className="empty-service-state">No repair requests submitted yet.</p>}</div> : adminTab === 'listings' ? <div className="admin-record-list">{adminListings.map(item => <article className="admin-record" key={item.id}><div><strong>{item.title}</strong><p>{item.category} · ₦{Number(item.price_ngn).toLocaleString('en-NG')} · {new Date(item.created_at).toLocaleDateString()}</p></div><label className="admin-select-label">Listing status<select className="verification-input admin-select" value={item.status} onChange={e => void updateAdminRecord('listings', item.id, 'status', e.target.value)}>{['draft','published','sold','removed'].map(status => <option key={status} value={status}>{status}</option>)}</select></label></article>)}{!adminListings.length && <p className="empty-service-state">No marketplace listings found yet.</p>}</div> : adminTab === 'operations' ? <AdminOperations onNotice={setNotice}/> : adminTab === 'catalog' ? <ContentStudio onNotice={setNotice}/> : adminTab === 'cms' ? <div className="cms-workspace"><div className="cms-page-list"><div className="cms-list-head"><div><strong>Content library</strong><small>{cmsPages.length} pages</small></div><button className="btn btn-lime btn-small" onClick={() => editCmsPage()}>+ New page</button></div>{cmsPages.map(page => <button key={page.id} className={cmsEditingId === page.id ? 'cms-page-row selected' : 'cms-page-row'} onClick={() => editCmsPage(page)}><span className="cms-page-title">{page.title}</span><span className="cms-page-meta">/{page.slug} · {page.status}</span></button>)}{!cmsPages.length && <p className="empty-service-state">No pages yet. Create your first page.</p>}</div><div className="cms-editor"><div className="cms-editor-head"><div><strong>{cmsEditingId ? 'Edit content' : 'Create content'}</strong><small>Markdown content · SEO fields · publication workflow</small></div>{cmsEditingId && <button className="text-button" onClick={() => void deleteCmsPage(cmsEditingId)}>Delete page</button>}</div><label>Page title<input className="verification-input" value={cmsDraft.title} onChange={e => setCmsDraft(v => ({...v,title:e.target.value,slug:v.slug || e.target.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}))} placeholder="e.g. Safe phone buying guide"/></label><label>URL slug<input className="verification-input" value={cmsDraft.slug} onChange={e => setCmsDraft(v => ({...v,slug:e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g,'-')}))} placeholder="safe-phone-buying-guide"/></label><div className="cms-two-fields"><label>Category<input className="verification-input" value={cmsDraft.category} onChange={e => setCmsDraft(v => ({...v,category:e.target.value}))}/></label><label>Publication status<select className="verification-input" value={cmsDraft.status} onChange={e => setCmsDraft(v => ({...v,status:e.target.value}))}><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label></div><label>Short summary<textarea className="verification-input cms-textarea" rows={2} value={cmsDraft.excerpt} onChange={e => setCmsDraft(v => ({...v,excerpt:e.target.value}))} placeholder="A short description for cards and search."/></label><label>Page body (Markdown supported)<textarea className="verification-input cms-body" rows={10} value={cmsDraft.body_markdown} onChange={e => setCmsDraft(v => ({...v,body_markdown:e.target.value}))} placeholder="# Your content\n\nWrite the page content here..."/></label><label className="cms-featured"><input type="checkbox" checked={cmsDraft.featured} onChange={e => setCmsDraft(v => ({...v,featured:e.target.checked}))}/> Feature this content</label><label>SEO title<input className="verification-input" value={cmsDraft.seo_title} onChange={e => setCmsDraft(v => ({...v,seo_title:e.target.value}))} placeholder="Search-result title"/></label><label>SEO description<textarea className="verification-input cms-textarea" rows={2} value={cmsDraft.seo_description} onChange={e => setCmsDraft(v => ({...v,seo_description:e.target.value}))} placeholder="Description for search engines."/></label><div className="cms-save-row"><span>Last edited content is stored in Bool CMS.</span><button className="btn btn-dark" onClick={() => void saveCmsPage()} disabled={cmsSaving}>{cmsSaving ? 'Saving…' : 'Save page'}</button></div></div></div> : adminTab === 'media' ? <div className="media-library">
-        <div className="media-library-head"><div><strong>Media library</strong><p>Upload reusable images for Bool pages and announcements. Public files can be viewed by anyone with their URL.</p><small>Images only · 10 MB maximum per file</small></div><label className="btn btn-dark media-upload-btn"><ImagePlus size={16}/> {mediaBusy ? 'Working…' : 'Upload images'}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" multiple disabled={mediaBusy} onChange={e => void uploadMedia(e)} /></label></div>
-        <div className="media-grid">{mediaFiles.map(file => { const url = supabase.storage.from('bool-media').getPublicUrl(file.name).data.publicUrl; return <article className="media-card" key={file.id || file.name}><a href={url} target="_blank" rel="noreferrer" className="media-preview"><img src={url} alt={file.name} loading="lazy"/></a><div className="media-file-name" title={file.name}>{file.name}</div><small>{file.metadata?.size ? (file.metadata.size / 1024).toFixed(0) + ' KB' : 'Image file'}</small><div className="media-actions"><button className="text-button" onClick={() => { void navigator.clipboard?.writeText(url).then(() => setNotice('Public media URL copied.')).catch(() => setNotice(url)); }}><Copy size={14}/> Copy URL</button><button className="text-button media-delete" onClick={() => void deleteMedia(file.name)} aria-label={'Delete ' + file.name}><Trash2 size={14}/> Delete</button></div></article>; })}</div>
-        {!mediaFiles.length && <div className="media-empty"><ImagePlus size={28}/><strong>No media uploaded yet</strong><p>Upload your first image to start building a reusable content library.</p></div>}
-      </div> : adminTab === 'announcements' ? <div className="cms-announcement-workspace"><form className="cms-announcement-form" onSubmit={e => {e.preventDefault();void createAnnouncement();}}><h3>Create announcement</h3><label>Title<input className="verification-input" value={announcementTitle} onChange={e => setAnnouncementTitle(e.target.value)} required placeholder="Service update or platform notice"/></label><label>Message<textarea className="verification-input cms-textarea" rows={3} value={announcementMessage} onChange={e => setAnnouncementMessage(e.target.value)} required placeholder="Write a clear announcement for users."/></label><div className="cms-two-fields"><label>Audience<select className="verification-input" value={announcementAudience} onChange={e => setAnnouncementAudience(e.target.value)}><option value="all">Everyone</option><option value="customers">Customers</option><option value="technicians">Technicians</option><option value="dealers">Dealers</option></select></label><label>Initial status<select className="verification-input" value={announcementStatus} onChange={e => setAnnouncementStatus(e.target.value)}><option value="draft">Draft</option><option value="published">Publish now</option><option value="archived">Archived</option></select></label></div><button className="btn btn-dark" type="submit" disabled={announcementBusy}>{announcementBusy ? 'Saving…' : 'Create announcement'}</button></form><div className="admin-record-list">{cmsAnnouncements.map(item => <article className="admin-record" key={item.id}><div><strong>{item.title}</strong><p>{item.message}</p><small>Audience: {item.audience} · {new Date(item.created_at).toLocaleDateString()}</small></div><label className="admin-select-label">Status<select className="verification-input admin-select" value={item.status} onChange={e => void updateAnnouncementStatus(item.id,e.target.value)}><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label></article>)}{!cmsAnnouncements.length && <p className="empty-service-state">No announcements yet. Create the first announcement above.</p>}</div></div> : adminTab === 'settings' ? <div className="cms-settings"><div className="cms-settings-form"><h3>Brand identity</h3><p>Replace the logo shown across BOOL. Use a transparent PNG or a crisp square/landscape SVG or WebP; maximum 5 MB.</p>{brandLogoUrl&&<img className="cms-brand-preview" src={brandLogoUrl} alt="Current BOOL brand logo"/>}<label>Upload replacement logo<input className="verification-input" type="file" accept="image/*" disabled={brandLogoUploading} onChange={e=>{void uploadBrandLogo(e.target.files?.[0]??null);e.currentTarget.value='';}}/></label><small>{brandLogoUploading?'Uploading logo…':'The current logo stays live until a new upload saves successfully.'}</small></div><div className="cms-settings-form"><h3>Platform configuration</h3><p>Settings are stored as JSON values. Keep secrets and private API keys out of CMS settings.</p><label>Setting key<input className="verification-input" value={settingKey} onChange={e => setSettingKey(e.target.value)} placeholder="e.g. support_email"/></label><label>Value (JSON or plain text)<textarea className="verification-input cms-textarea" rows={3} value={settingValue} onChange={e => setSettingValue(e.target.value)} placeholder='"support@bool.example" or {"enabled":true}'/></label><label>Description<input className="verification-input" value={settingDescription} onChange={e => setSettingDescription(e.target.value)} placeholder="What this setting controls"/></label><button className="btn btn-dark" onClick={() => void saveCmsSetting()}>Save setting</button></div><div className="admin-record-list">{cmsSettings.map(item => <article className="admin-record" key={item.key}><div><strong>{item.key}</strong><p>{JSON.stringify(item.value)}</p><small>{item.description}</small></div><button className="text-button" onClick={() => {setSettingKey(item.key);setSettingValue(JSON.stringify(item.value));setSettingDescription(item.description);}}>Edit</button></article>)}{!cmsSettings.length && <p className="empty-service-state">No custom settings created.</p>}</div></div> : <div className="admin-record-list">{auditLogs.map(item => <article className="admin-record" key={item.id}><div><strong>{item.action.toUpperCase()} · {item.resource_type}</strong><p>Resource: {item.resource_id || 'not recorded'}</p><small>{new Date(item.created_at).toLocaleString()} · Actor: {item.actor_id || 'system'}</small></div></article>)}{!auditLogs.length && <p className="empty-service-state">No admin audit events recorded yet.</p>}</div>}<p className="admin-footnote">Showing up to 200 records per content section. Device status remains an administrator-entered result, not an automatic ownership or blacklist check. CMS pages are stored as drafts until published.</p></section></div>}
-    {authOpen && <div className="modal-backdrop auth-backdrop" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setAuthOpen(false); }}><section className="verification-modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title"><div className="verification-head"><div><div className="eyebrow dark-eyebrow">YOUR BOOL ACCOUNT</div><h2 id="auth-title">{authMode === 'signup' ? 'Create your account' : 'Welcome back'}</h2><p>{authMode === 'signup' ? 'Save device-check reports and keep your work in one place.' : 'Sign in to access your private Bool records.'}</p></div><button className="help-close" onClick={() => setAuthOpen(false)} aria-label="Close account form"><X size={18}/></button></div><form onSubmit={submitAuth}>{authMode === 'signup' && <><label className="verification-label" htmlFor="auth-name">Your name</label><input className="verification-input" id="auth-name" autoComplete="name" value={authName} onChange={e => setAuthName(e.target.value)} placeholder="Full name" required/></>}<label className="verification-label" htmlFor="auth-email">Email address</label><input className="verification-input" id="auth-email" type="email" autoComplete="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="you@example.com" required/><label className="verification-label" htmlFor="auth-password">Password</label><input className="verification-input" id="auth-password" type="password" autoComplete={authMode === 'signup' ? 'new-password' : 'current-password'} minLength={8} value={authPassword} onChange={e => setAuthPassword(e.target.value)} placeholder="At least 8 characters" required/><p className="verification-hint">Use a password you do not use on another website.</p>{authMessage && <div className="verification-result result-info" role="status">{authMessage}</div>}<button className="btn btn-dark verification-submit" type="submit" disabled={authBusy}>{authBusy ? 'Please wait…' : authMode === 'signup' ? 'Create secure account' : 'Sign in'} <ArrowRight size={16}/></button></form><div className="auth-switch">{authMode === 'signup' ? 'Already have an account?' : 'New to Bool?'} <button type="button" onClick={() => { setAuthMode(authMode === 'signup' ? 'signin' : 'signup'); setAuthMessage(''); }}>{authMode === 'signup' ? 'Sign in' : 'Create account'}</button></div><p className="auth-privacy">Your device reports are private to your account. Never share your password or one-time verification codes.</p></section></div>}
-    {verificationOpen && <div className="modal-backdrop" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) setVerificationOpen(false); }}><section className="verification-modal" role="dialog" aria-modal="true" aria-labelledby="verification-title"><div className="verification-head"><div><div className="eyebrow dark-eyebrow">BOOL DEVICE TRUST</div><h2 id="verification-title">Start a remote phone check</h2><p>Build an evidence checklist before you buy, sell or swap a device.</p></div><button className="help-close" onClick={() => setVerificationOpen(false)} aria-label="Close verification"><X size={18}/></button></div><form onSubmit={(e) => { e.preventDefault(); const ok = validImei(imei); setVerificationMessage(ok ? 'IMEI format and checksum look valid. Bool has not queried a live blacklist or ownership database. Use the official NCC checker below for Nigerian network/device verification, then record the result separately.' : 'Enter a valid 15-digit IMEI. On most phones, dial *#06# to display it. This checks the number format only; it does not establish ownership or blacklist status.'); }}><label className="verification-label" htmlFor="device-model">Device make and model</label><input id="device-model" className="verification-input" value={deviceModel} onChange={e => setDeviceModel(e.target.value)} placeholder="e.g. iPhone 13 Pro" required/><label className="verification-label" htmlFor="device-imei">IMEI (15 digits)</label><input id="device-imei" className="verification-input" value={imei} onChange={e => { setImei(e.target.value.replace(/[^0-9 ]/g, '').slice(0, 18)); setVerificationMessage(''); }} placeholder="Dial *#06# on the phone" inputMode="numeric" required/><p className="verification-hint">Your IMEI is sensitive device information. Only enter a device you are authorised to check.</p><button className="btn btn-dark verification-submit" type="submit">Validate IMEI format <ArrowRight size={16}/></button></form>{verificationMessage && <div className={validImei(imei) ? 'verification-result result-info' : 'verification-result result-warn'} role="status">{verificationMessage}</div>}<div className="official-check"><strong>Official Nigerian device check</strong><p>Check NCC device approval/verification through the official service. Bool does not claim to have queried NCC.</p><a href="https://www.ncc.gov.ng/DeviceChecker" target="_blank" rel="noreferrer">Open NCC Device Checker <ArrowUpRight size={14}/></a><small>Never share an OTP with a seller or another person.</small></div><div className="remote-tests"><strong>Guided remote condition checklist</strong><p>Ask the seller to perform each test live on a video call. Tick only what you personally observed.</p>{deviceTests.map(test => <label key={test} className="remote-test-row"><input type="checkbox" checked={checkedTests.includes(test)} onChange={e => setCheckedTests(e.target.checked ? [...checkedTests, test] : checkedTests.filter(x => x !== test))}/><span>{test}</span></label>)}<div className="checklist-summary">{checkedTests.length} of {deviceTests.length} tests observed</div><button type="button" className="btn btn-dark verification-submit save-report-button" onClick={saveDeviceReport} disabled={savingReport}>{savingReport ? 'Saving report…' : 'Save private report'} <ClipboardCheck size={16}/></button>{!session && <p className="verification-hint">Sign in to save your checklist privately to your Bool account.</p>}{session && savedChecks.length > 0 && <div className="saved-reports"><strong>Your recent saved checks</strong>{savedChecks.slice(0,3).map(check => <div className="saved-report-row" key={check.id}><span>{check.device_model}</span><small>{new Date(check.created_at).toLocaleDateString()} · {check.observed_tests?.length ?? 0} tests · IMEI ending {check.imei_last4 || 'not provided'}</small></div>)}</div>}</div><div className="verification-footer">Bool stores only the last four IMEI digits for your report, not the full IMEI. An official check remains unverified until you confirm it separately.</div></section></div>}    {orderOpen && <div className="modal-backdrop" role="presentation" onClick={e=>{if(e.target===e.currentTarget&&!orderSubmitting)setOrderOpen(false);}}><section className="verification-modal bool-order-modal" role="dialog" aria-modal="true" aria-labelledby="bool-order-title"><div className="verification-head"><div><div className="eyebrow dark-eyebrow">DIRECT TO BOOL'S TEAM</div><h2 id="bool-order-title">{orderReference?'Request received':orderContext.kind==='product'?'Enquire about this device':'How can BOOL help?'}</h2><p>{orderReference?'Your request is saved in BOOL. Keep this reference for follow-up.':"We have carried the item details forward. Add your contact information and send the request directly to BOOL."}</p></div><button type="button" className="help-close" onClick={()=>{if(!orderSubmitting)setOrderOpen(false);}} aria-label="Close order form">×</button></div>{orderReference?<div className="bool-order-success"><div className="bool-order-success-icon"><Check size={26}/></div><p className="eyebrow dark-eyebrow">SAVED TO BOOL</p><h3>{orderReference}</h3><p>Your order/request is now recorded in BOOL's admin platform. The team can review it and update its status. WhatsApp is optional; your request has already been submitted.</p><a className="btn btn-lime" href={orderWhatsAppUrl} target="_blank" rel="noreferrer">Optional: follow up on WhatsApp <ArrowUpRight size={16}/></a><button type="button" className="btn btn-dark verification-submit" onClick={()=>setOrderOpen(false)}>Done</button></div>:<>{orderContext.kind==='product'&&<div className="bool-order-item">{orderContext.image?<img src={orderContext.image} alt={orderContext.title}/>:<div className="bool-order-item-placeholder"><Smartphone size={25}/></div>}<div><strong>{orderContext.title}</strong><span>{[orderContext.model,orderContext.condition,orderContext.category].filter(Boolean).join(' · ')}</span>{typeof orderContext.price==='number'&&<b>₦{orderContext.price.toLocaleString('en-NG')}</b>}<small>Final stock and price will be confirmed by BOOL.</small></div></div>}<form onSubmit={submitBoolOrder} className="bool-order-form"><label className="verification-label" htmlFor="bool-order-name">Your name</label><input id="bool-order-name" className="verification-input" autoComplete="name" value={orderCustomerName} onChange={e=>setOrderCustomerName(e.target.value)} placeholder="Full name" required/><label className="verification-label" htmlFor="bool-order-phone">Phone / WhatsApp number</label><input id="bool-order-phone" className="verification-input" type="tel" autoComplete="tel" value={orderPhone} onChange={e=>setOrderPhone(e.target.value)} placeholder="e.g. 08012345678" required/>{orderContext.kind==='product'&&<><label className="verification-label" htmlFor="bool-order-quantity">Quantity</label><input id="bool-order-quantity" className="verification-input" type="number" min="1" max="99" value={orderQuantity} onChange={e=>setOrderQuantity(e.target.value)} required/></>}<label className="verification-label" htmlFor="bool-order-location">Location / delivery area <span>(optional)</span></label><input id="bool-order-location" className="verification-input" autoComplete="address-level2" value={orderLocation} onChange={e=>setOrderLocation(e.target.value)} placeholder="e.g. Uyo, Akwa Ibom"/><label className="verification-label" htmlFor="bool-order-note">Anything else BOOL should know? <span>(optional)</span></label><textarea id="bool-order-note" className="verification-input" rows={3} value={orderNote} onChange={e=>setOrderNote(e.target.value)} placeholder="Preferred variant, delivery details, or your question…"/><button type="submit" className="btn btn-dark verification-submit" disabled={orderSubmitting}>{orderSubmitting?'Saving request…':'Submit request to BOOL'} <ArrowRight size={16}/></button><p className="bool-order-privacy">Submitting saves your request to BOOL first. You do not need to open WhatsApp. BOOL will confirm availability, pricing and next steps; this is not a payment confirmation.</p></form></>}</section></div>}
-{customerHubTab && <CustomerHub initialTab={customerHubTab} userId={session?.user?.id} onClose={() => setCustomerHubTab(null)} onNotice={setNotice} onRequireAuth={() => { setAuthMode('signin'); setAuthMessage('Sign in or create a Bool account to manage your requests and support cases.'); setAuthOpen(true); }}/>}
-    {notice && <div className="toast" role="status"><Sparkles size={18}/><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Dismiss"><X size={16}/></button></div>}
-    {helpOpen && <section className="help-panel" role="dialog" aria-modal="false" aria-labelledby="help-title"><div className="help-panel-head"><div className="help-panel-icon"><CircleHelp size={21}/></div><div><strong id="help-title">How can we help?</strong><p>Quick answers for getting started with Bool.</p></div><button className="help-close" onClick={() => setHelpOpen(false)} aria-label="Close help"><X size={18}/></button></div><div className="help-content"><article><strong>What is Bool?</strong><p>Bool is owned and operated by RealTreats Technologies to help customers find approved technology providers, request services, and get support.</p></article><article><strong>How do payments work?</strong><p>Pay only against a quote confirmed through Bool. Manual transfers go to RealTreats Technologies and remain unconfirmed until our team checks the receiving account. Paystack is not enabled yet.</p></article><article><strong>How do I raise a complaint?</strong><p>Open Contact RealTreats in the customer centre to create a private support case, share your Bool request reference, and continue the conversation in your account.</p></article><article><strong>How are providers verified?</strong><p>Providers are reviewed before their profiles appear publicly. The verification badge describes the checks recorded by RealTreats Technologies; it is not a guarantee against every future issue.</p></article></div><div className="help-panel-foot"><span>Built by RealTreats Technologies</span><a href="https://github.com/ubonguiux/bool" target="_blank" rel="noreferrer">Follow development <ArrowUpRight size={14}/></a></div></section>}
-    <button className="help-fab" aria-label="Bool help" aria-expanded={helpOpen} onClick={() => setHelpOpen(!helpOpen)}><CircleHelp size={20}/><span>{helpOpen ? 'Close help' : 'Need a hand?'}</span>{helpOpen ? <X size={14}/> : <ChevronDown size={14}/>}</button>
-  </div>;
+ return <div className="app-shell">
+  <aside className={'sidebar '+(mobileNav?'sidebar-open':'')}><div className="brand"><div className="brand-mark"><Music2 size={22}/></div><div><strong>RVM Choir</strong><small>SHARED SONG LIBRARY</small></div><button className="icon-btn close-nav" onClick={()=>setMobileNav(false)} aria-label="Close menu"><X size={19}/></button></div>
+   <div className="nav-label">WORKSPACE</div><button className={'nav-item '+(active==='Overview'?'nav-active':'')} onClick={()=>{setActive('Overview');setMobileNav(false)}}><Home size={18}/>Overview</button><button className={'nav-item '+(active==='Library'?'nav-active':'')} onClick={()=>{setActive('Library');setMobileNav(false)}}><Library size={18}/>Song library<span className="nav-count">{songs.length}</span></button><button className={'nav-item '+(active==='Favorites'?'nav-active':'')} onClick={()=>{setActive('Favorites');setMobileNav(false)}}><Sparkles size={18}/>Favourites</button><button className={'nav-item '+(active==='History'?'nav-active':'')} onClick={()=>{setActive('History');setMobileNav(false)}}><Clock3 size={18}/>Performance history</button>
+   <div className="nav-label category-label">COLLECTIONS</div>{categories.slice(1).map(c=><button key={c} className={'nav-item category-item '+(category===c&&active==='Library'?'nav-active':'')} onClick={()=>{setCategory(c);setActive('Library');setMobileNav(false)}}><span className="category-dot"/> {c}</button>)}
+   <div className="sidebar-bottom"><div className="choir-card"><div className="choir-card-icon"><Users size={18}/></div><strong>{choir.name}</strong><p>Your choir’s shared collection.</p><span>{role.toUpperCase()}</span></div><button className="nav-item" onClick={()=>{navigator.clipboard?.writeText(choir.invite_code).then(()=>tell('Invite code copied. Share it only with choir members.')).catch(()=>tell('Invite code: '+choir.invite_code))}}><Copy size={18}/>Copy invite code</button>{['owner','admin'].includes(role)&&<button className="nav-item" disabled={busy} onClick={()=>void rotateInviteCode()}><RefreshCw size={18}/>Regenerate invite code</button>}<button className="nav-item" onClick={()=>tell('Member role: '+role+'. Song and file management is limited to choir leaders and librarians.')}><Settings2 size={18}/>Permissions</button><button className="nav-item" onClick={()=>tell('RVM Choir supports your existing rehearsals and WhatsApp sharing; it does not read private WhatsApp chats.')}><CircleHelp size={18}/>Help & guidance</button><button className="nav-item" onClick={signOut}><LogOut size={18}/>Sign out</button></div>
+  </aside>
+  {mobileNav&&<button className="scrim" aria-label="Close menu" onClick={()=>setMobileNav(false)}/>}
+  <main className="main-area"><header className="topbar"><button className="icon-btn mobile-menu" onClick={()=>setMobileNav(true)} aria-label="Open menu"><Menu size={21}/></button><div className="breadcrumb"><span>{choir.name}</span><span className="crumb-slash">/</span><strong>{active==='Favorites'?'Favourites':active==='History'?'Performance history':active}</strong></div><div className="top-actions"><span className="preview-badge live-badge"><span/>Shared library</span><button className="avatar" title={user.email||'Account'}>{(user.user_metadata?.display_name||user.email||'R').slice(0,1).toUpperCase()}</button></div></header>
+  {active==='Overview'?<section className="page-content"><div className="welcome-row"><div><p className="eyebrow-light">YOUR CHOIR'S MUSIC HOME</p><h1>Every song has a place.</h1><p className="subhead">A shared home for your choir’s songs, lyrics, recordings and performance memories.</p></div>{isManager&&<button className="primary-btn" onClick={()=>setShowAdd(true)}><Plus size={17}/> Add a song</button>}</div><div className="stats-grid">{stats.map(s=><div className="stat-card" key={s.label}><div className="stat-top"><span>{s.label}</span><s.icon size={18}/></div><strong>{s.value}</strong><small>{s.label==='Recently performed'?'In the last 30 days':'Shared with choir members'}</small></div>)}</div><div className="overview-grid"><div className="panel"><div className="panel-head"><div><h2>Recently added</h2><p>Latest songs in your collection</p></div><button className="link-btn" onClick={()=>setActive('Library')}>View library</button></div>{songs.slice(0,4).map(s=><button className="recent-song" key={s.id} onClick={()=>setSelected(s.id)}><span className="song-icon"><Music2 size={17}/></span><span className="recent-info"><strong>{s.title}</strong><small>{s.category} · {s.composer||'Composer not added'}</small></span><span className="recent-date">{fmt(s.added)}</span></button>)}{!songs.length&&<div className="empty-state">Your shared library is ready. {isManager?'Add the choir’s first song.':'Ask your choir librarian to add songs.'}</div>}</div><div className="panel"><div className="panel-head"><div><h2>Quick actions</h2><p>Keep your library up to date</p></div></div>{isManager&&<button className="quick-action" onClick={()=>setShowAdd(true)}><span className="quick-icon"><Plus size={18}/></span><span><strong>Add a song</strong><small>Save lyrics and song details</small></span><span className="quick-arrow">↗</span></button>}<button className="quick-action" onClick={()=>{setActive('History');setCategory('All Songs')}}><span className="quick-icon"><CalendarDays size={18}/></span><span><strong>Review performance history</strong><small>See when songs were last used</small></span><span className="quick-arrow">↗</span></button><button className="quick-action" onClick={()=>tell('Open a song and use Share to send its details through your device’s share menu.')}><span className="quick-icon"><Share2 size={18}/></span><span><strong>Share a song</strong><small>Send details to WhatsApp or another app</small></span><span className="quick-arrow">↗</span></button></div></div><div className="footnote"><span className="footnote-dot"/> Shared data is stored in your choir’s Supabase workspace. Audio and document files are downloaded only when you open them.</div></section>
+  :active==='History'?<section className="page-content"><div className="welcome-row"><div><p className="eyebrow-light">KEEP THE MEMORY</p><h1>Performance history</h1><p className="subhead">Revisit where and when songs were performed.</p></div></div><div className="panel history-panel">{songs.filter(s=>s.lastPerformed).sort((a,b)=>b.lastPerformed.localeCompare(a.lastPerformed)).map(s=><button className="history-row" key={s.id} onClick={()=>setSelected(s.id)}><span className="history-date"><strong>{new Date(s.lastPerformed+'T12:00:00').getDate()}</strong><small>{new Date(s.lastPerformed+'T12:00:00').toLocaleDateString('en',{month:'short'}).toUpperCase()}</small></span><span className="recent-info"><strong>{s.title}</strong><small>{s.event||'Event not specified'} · {s.category}</small></span><span className="history-year">{new Date(s.lastPerformed+'T12:00:00').getFullYear()}</span></button>)}{!songs.some(s=>s.lastPerformed)&&<div className="empty-state">Performance records will appear here after a song performance is recorded.</div>}</div></section>
+  :<section className="page-content"><div className="welcome-row"><div><p className="eyebrow-light">{active==='Favorites'?'YOUR PERSONAL COLLECTION':'THE CHOIR COLLECTION'}</p><h1>{active==='Favorites'?'Favourites':'Song library'}</h1><p className="subhead">{active==='Favorites'?'Songs you have saved for quick access.':'Find lyrics, recordings and song details in one simple place.'}</p></div>{isManager&&<button className="primary-btn" onClick={()=>setShowAdd(true)}><Plus size={17}/> Add a song</button>}</div>
+  <div className="library-toolbar"><div className="search-box"><Search size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search songs, lyrics, composer…" aria-label="Search songs"/>{query&&<button onClick={()=>setQuery('')} aria-label="Clear search"><X size={15}/></button>}</div><button className="filter-btn" onClick={()=>{setCategory('All Songs');setQuery('')}}><SlidersHorizontal size={17}/> Reset filters</button><div className="results-count"><strong>{filtered.length}</strong> songs</div></div>
+  <div className="category-pills">{categories.map(c=><button key={c} className={'category-pill '+(category===c?'pill-active':'')} onClick={()=>setCategory(c)}>{c}</button>)}</div>
+  {loadingSongs?<div className="empty-state"><RefreshCw className="spin" size={24}/><p>Loading shared songs…</p></div>:filtered.length?<div className="song-grid">{filtered.map((s,i)=><article className="song-card" key={s.id}><div className={'song-cover cover-'+(i%4)}><div className="cover-top"><span>{s.category}</span><button className={'favorite-btn '+(s.favorite?'is-favorite':'')} onClick={()=>void toggleFavorite(s)} aria-label={s.favorite?'Remove from favourites':'Add to favourites'}>★</button></div><div className="cover-symbol"><Music2 size={34}/></div><div className="cover-index">RVM · {String(i+1).padStart(2,'0')}</div></div><div className="song-card-body"><button className="song-title-button" onClick={()=>setSelected(s.id)}><h3>{s.title}</h3></button><p className="song-composer">{s.composer||s.arranger||'Composer not added'}</p><div className="song-meta"><span><FileText size={14}/>{s.lyrics?'Lyrics saved':'No lyrics yet'}</span><span><Clock3 size={14}/>{s.lastPerformed?fmt(s.lastPerformed):'Not performed yet'}</span></div><div className="song-card-actions"><button className="outline-btn" onClick={()=>setSelected(s.id)}>View song</button><button className="share-btn" onClick={()=>void share(s)} aria-label={'Share '+s.title}><Share2 size={16}/></button></div></div></article>)}</div>:<div className="empty-state"><div className="empty-icon"><Search size={23}/></div><h3>{active==='Favorites'?'No favourites yet':'No songs found'}</h3><p>{isManager?'Try another search or add a song to your library.':'Try another search or ask your choir librarian to add songs.'}</p>{isManager&&<button className="primary-btn" onClick={()=>setShowAdd(true)}><Plus size={17}/> Add a song</button>}</div>}
+  <div className="footnote"><span className="footnote-dot"/>{choir.name} · Your songs are shared with authorised choir members.</div></section>}
+  <footer className="app-footer"><span>RVM Choir <span className="footer-sep">·</span> A RealTreats Technologies concept</span><span>Made for music, memory & ministry.</span></footer></main>
+  {chosen&&<div className="modal-backdrop" onClick={()=>setSelected(null)}><section className="song-detail modal-card" onClick={e=>e.stopPropagation()}><div className="detail-cover"><button className="icon-btn detail-close" onClick={()=>setSelected(null)} aria-label="Close"><X size={20}/></button><div className="detail-music"><Music2 size={42}/></div><span>{chosen.category}</span></div><div className="detail-content"><div className="detail-title-row"><div><p className="eyebrow-light">RVM CHOIR SONG</p><h2>{chosen.title}</h2><p>{[chosen.composer,chosen.arranger&&'Arranged by '+chosen.arranger].filter(Boolean).join(' · ')||'Composer / arranger not specified'}</p></div><button className={'favorite-btn detail-fav '+(chosen.favorite?'is-favorite':'')} onClick={()=>void toggleFavorite(chosen)}>★</button></div><div className="detail-stats"><span><CalendarDays size={15}/> Added {fmt(chosen.added)}</span><span><Clock3 size={15}/> Last performed {fmt(chosen.lastPerformed)}</span></div><h3>Lyrics & notes</h3><div className="lyrics-box">{chosen.lyrics||'No lyrics have been added to this song yet.'}</div><div className="detail-info-grid"><div><small>LANGUAGE</small><strong>{chosen.language||'Not specified'}</strong></div><div><small>LAST EVENT</small><strong>{chosen.event||'Not recorded'}</strong></div></div><div className="attachment-list"><h3>Audio & documents</h3>{files.length?files.map(file=><div className="attachment-row" key={file.id}><span className="quick-icon">{file.mime_type.startsWith('audio/')?<FileAudio size={18}/>:<FileText size={18}/>}</span><span><strong>{file.original_filename}</strong><small>{(file.file_size_bytes/1024/1024).toFixed(1)} MB · {file.kind}</small></span><button className="share-btn" onClick={()=>void openFile(file)} aria-label={'Open '+file.original_filename}><Download size={16}/></button>{file.mime_type.startsWith('audio/')&&(signedUrls[file.id]?<audio className="song-audio-player" controls preload="none" src={signedUrls[file.id]} aria-label={'Play '+file.original_filename}/>:<button className="play-btn" onClick={()=>void getFileUrl(file).catch(e=>tell(prettyError(e)))} aria-label="Load audio player"><Play size={16}/></button>)}</div>):<p className="attachment-empty">No files attached to this song yet.</p>}</div><div className="detail-actions"><button className="primary-btn" onClick={()=>void share(chosen)}><Share2 size={16}/> Share song details</button>{isManager&&<button className="outline-btn" onClick={()=>setShowPerformance(true)}><CalendarDays size={16}/> Record performance</button>}</div></div></section></div>}
+  {showAdd&&<div className="modal-backdrop" onClick={()=>{setShowAdd(false);setUploadFile(null)}}><section className="modal-card add-modal" onClick={e=>e.stopPropagation()}><div className="modal-heading"><div><p className="eyebrow-light">GROW YOUR COLLECTION</p><h2>Add a song</h2><p>Save lyrics and optional rehearsal audio or score.</p></div><button className="icon-btn" onClick={()=>{setShowAdd(false);setUploadFile(null)}} aria-label="Close"><X size={20}/></button></div><form onSubmit={addSong}><label>Song title <input autoFocus required maxLength={240} value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="e.g. Great Is Thy Faithfulness"/></label><div className="form-row"><label>Category<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{categories.slice(1).map(c=><option key={c}>{c}</option>)}</select></label><label>Language<input maxLength={80} value={form.language} onChange={e=>setForm({...form,language:e.target.value})} placeholder="English"/></label></div><div className="form-row"><label>Composer<input maxLength={180} value={form.composer} onChange={e=>setForm({...form,composer:e.target.value})} placeholder="Composer"/></label><label>Arranger<input maxLength={180} value={form.arranger} onChange={e=>setForm({...form,arranger:e.target.value})} placeholder="Arranger"/></label></div><label>Lyrics / notes<textarea rows={5} maxLength={30000} value={form.lyrics} onChange={e=>setForm({...form,lyrics:e.target.value})} placeholder="Add lyrics, verses or rehearsal notes…"/></label><div className="form-row"><label>Last performed<input type="date" value={form.lastPerformed} onChange={e=>setForm({...form,lastPerformed:e.target.value})}/></label><label>Service / event<input maxLength={180} value={form.event} onChange={e=>setForm({...form,event:e.target.value})} placeholder="Sunday service"/></label></div><label className="file-picker">Audio or score (optional)<input type="file" accept="audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,audio/x-wav,.mp3,.m4a,.aac,.ogg,.wav,.pdf,.doc,.docx,.txt" onChange={e=>setUploadFile(e.target.files?.[0]||null)}/><small>{uploadFile?uploadFile.name:'Private storage · 50 MB maximum · uploaded on save'}</small></label><div className="modal-actions"><button type="button" className="outline-btn" onClick={()=>{setShowAdd(false);setUploadFile(null)}}>Cancel</button><button className="primary-btn" type="submit" disabled={busy}><Check size={17}/>{busy?'Saving…':'Save song'}</button></div></form></section></div>}
+  {showPerformance&&chosen&&<div className="modal-backdrop" onClick={()=>setShowPerformance(false)}><section className="modal-card add-modal" onClick={e=>e.stopPropagation()}><div className="modal-heading"><div><p className="eyebrow-light">CHOIR TIMELINE</p><h2>Record performance</h2><p>{chosen.title}</p></div><button className="icon-btn" onClick={()=>setShowPerformance(false)} aria-label="Close"><X size={20}/></button></div><form onSubmit={recordPerformance}><label>Service, event or occasion<input autoFocus maxLength={180} value={performanceEvent} onChange={e=>setPerformanceEvent(e.target.value)} placeholder="Sunday service, wedding, concert…"/></label><div className="modal-actions"><button type="button" className="outline-btn" onClick={()=>setShowPerformance(false)}>Cancel</button><button className="primary-btn" disabled={busy}><Check size={17}/>{busy?'Saving…':'Record performance'}</button></div></form></section></div>}
+  {notice&&<div className="toast"><Check size={17}/>{notice}<button onClick={()=>setNotice('')} aria-label="Dismiss"><X size={15}/></button></div>}
+ </div>
 }
