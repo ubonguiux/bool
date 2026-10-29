@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { CalendarDays, Check, CircleHelp, Clock3, FileAudio, FileText, Home, Library, ListMusic, LogOut, Menu, Music2, Play, Plus, Search, Settings2, Share2, SlidersHorizontal, Sparkles, Users, X, Download, Copy, Mail, LockKeyhole, RefreshCw } from 'lucide-react';
+import { CalendarDays, Check, CircleHelp, Clock3, FileAudio, FileText, Home, Library, ListMusic, LogOut, Menu, Music2, Play, Plus, Search, Settings2, Share2, SlidersHorizontal, Sparkles, Users, X, Download, Copy, Mail, LockKeyhole, RefreshCw, ShieldCheck, ClipboardList, Shirt, Megaphone, UserCheck, Save, CalendarCheck, CheckCircle2 } from 'lucide-react';
 import { isRvmBackendConfigured, supabase } from './lib/supabase';
 
 type Choir = { id:string; name:string; invite_code:string };
 type Song = { id:string; title:string; category:string; language:string; lyrics:string; composer:string; arranger:string; added:string; lastPerformed:string; event:string; favorite:boolean };
 type SongFile = { id:string; storage_path:string; original_filename:string; mime_type:string; file_size_bytes:number; kind:string };
+type RvmProfile = { user_id:string; display_name:string; email:string; approval_status:'pending'|'approved'|'rejected'|'suspended'; role:string; created_at?:string };
+type RosterRow = { id:string; month_start:string; duty_type:string; title:string; member_user_id:string|null; notes:string|null; status:string };
+type AdminItem = { id:string; item_type:string; title:string; details:string; event_date:string|null; status:string };
 const categories = ['All Songs','Hymns','Praise & Worship','Special Numbers','Christmas','Anthems','Traditional'];
 const fmt=(date:string)=>date?new Date(date+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'Not recorded';
 const prettyError=(error:unknown)=>error instanceof Error?error.message:'Something went wrong. Please try again.';
@@ -14,6 +17,16 @@ const safeFilename=(name:string)=>name.normalize('NFKD').replace(/[^a-zA-Z0-9._-
 
 export default function App(){
  const [user,setUser]=useState<User|null>(null);
+ const [showAuth,setShowAuth]=useState(false);
+ const [profile,setProfile]=useState<RvmProfile|null>(null);
+ const [profileLoading,setProfileLoading]=useState(false);
+ const [siteContent,setSiteContent]=useState<Record<string,{title:string;body:string}>>({welcome_headline:{title:'A choir that stays in harmony.',body:'RVM Choir brings your music library, rehearsals, monthly duties, Sunday service planning and choir administration into one organised space.'},welcome_about:{title:'More than a song library',body:'Find lyrics, arrangements, recordings and performance history; coordinate uniform rosters, backup and press-team duty; plan choir Sundays; and keep everyone aligned between rehearsals.'}});
+ const [memberProfiles,setMemberProfiles]=useState<RvmProfile[]>([]);
+ const [rosterRows,setRosterRows]=useState<RosterRow[]>([]);
+ const [adminItems,setAdminItems]=useState<AdminItem[]>([]);
+ const [rosterForm,setRosterForm]=useState({month_start:new Date().toISOString().slice(0,7)+'-01',duty_type:'uniform',title:'',member_user_id:'',notes:''});
+ const [adminForm,setAdminForm]=useState({item_type:'choir_sunday',title:'',details:'',event_date:'',status:'planned'});
+ const [cmsForm,setCmsForm]=useState({headlineTitle:'',headlineBody:'',aboutTitle:'',aboutBody:''});
  const [authLoading,setAuthLoading]=useState(true);
  const [busy,setBusy]=useState(false);
  const [authMode,setAuthMode]=useState<'signin'|'signup'|'reset'>('signin');
@@ -52,6 +65,23 @@ export default function App(){
   return ()=>{alive=false;subscription.unsubscribe()};
  },[tell]);
 
+ useEffect(()=>{
+  let alive=true;
+  if(!isRvmBackendConfigured){setProfileLoading(false);return}
+  if(!user){setProfile(null);setProfileLoading(false);return}
+  setProfileLoading(true);
+  (async()=>{
+   try{
+    await supabase.rpc('rvm_ensure_profile');
+    const {data,error}=await supabase.from('rvm_profiles').select('user_id,display_name,email,approval_status,role,created_at').eq('user_id',user.id).single();
+    if(error)throw error;
+    if(alive)setProfile(data as RvmProfile);
+   }catch(e){if(alive)tell('Could not verify account approval: '+prettyError(e))}
+   finally{if(alive)setProfileLoading(false)}
+  })();
+  return ()=>{alive=false};
+ },[user,tell]);
+
  const loadWorkspace=useCallback(async(currentUser:User)=>{
   setBusy(true);
   try{
@@ -65,7 +95,26 @@ export default function App(){
   finally{setBusy(false)}
  },[tell]);
 
- useEffect(()=>{if(user)void loadWorkspace(user);else{setChoir(null);setSongs([]);setRole('member')}},[user,loadWorkspace]);
+ useEffect(()=>{
+  if(user&&profile?.approval_status==='approved')void loadWorkspace(user);
+  else{setChoir(null);setSongs([]);setRole(profile?.role||'member')}
+ },[user,profile,loadWorkspace]);
+
+ useEffect(()=>{
+  if(!isRvmBackendConfigured)return;
+  supabase.from('rvm_site_content').select('content_key,title,body').then(({data})=>{
+   if(data?.length)setSiteContent(previous=>({...previous,...Object.fromEntries(data.map(row=>[row.content_key,{title:row.title,body:row.body}]))}));
+  });
+ },[]);
+
+ useEffect(()=>{
+  if(profile?.role==='owner'){
+   supabase.from('rvm_site_content').select('content_key,title,body').then(({data})=>{
+    const rows=Object.fromEntries((data||[]).map(row=>[row.content_key,row]));
+    setCmsForm({headlineTitle:rows.welcome_headline?.title||'',headlineBody:rows.welcome_headline?.body||'',aboutTitle:rows.welcome_about?.title||'',aboutBody:rows.welcome_about?.body||''});
+   });
+  }
+ },[profile]);
 
  const loadSongs=useCallback(async()=>{
   if(!choir||!user)return;
@@ -186,9 +235,57 @@ export default function App(){
  }
  const share=async(s:Song)=>{const text='RVM Choir · '+s.title+(s.composer?'\nComposer: '+s.composer:'')+(s.lyrics?'\n\n'+s.lyrics:'');try{if(navigator.share)await navigator.share({title:s.title,text});else{await navigator.clipboard.writeText(text);tell('Song details copied for sharing.')}}catch(e){if(e instanceof Error&&e.name!=='AbortError')tell('Could not share: '+e.message)}};
 
+ const loadAdminData=useCallback(async()=>{
+  if(!choir)return;
+  if(profile?.role==='owner'){
+   const {data,error}=await supabase.from('rvm_profiles').select('user_id,display_name,email,approval_status,role,created_at').order('created_at',{ascending:false});
+   if(!error&&data)setMemberProfiles(data as RvmProfile[]);
+  }
+  const [{data:roster},{data:items}]=await Promise.all([
+   supabase.from('rvm_monthly_roster').select('id,month_start,duty_type,title,member_user_id,notes,status').eq('choir_id',choir.id).order('month_start',{ascending:false}),
+   supabase.from('rvm_choir_admin_items').select('id,item_type,title,details,event_date,status').eq('choir_id',choir.id).order('event_date',{ascending:false})
+  ]);
+  setRosterRows((roster||[]) as RosterRow[]);setAdminItems((items||[]) as AdminItem[]);
+ },[choir,profile]);
+ useEffect(()=>{if(user&&profile?.approval_status==='approved'&&choir&&['Administration','Monthly roster','Owner CMS'].includes(active))void loadAdminData()},[user,profile,choir,active,loadAdminData]);
+
+ async function reviewMember(targetId:string,decision:'approved'|'rejected'|'suspended',assignedRole='chorister'){
+  setBusy(true);
+  try{const {error}=await supabase.rpc('rvm_review_member',{target_user_id:targetId,decision,assigned_role:assignedRole});if(error)throw error;await loadAdminData();tell('Member access updated.')}
+  catch(e){tell('Could not update member access: '+prettyError(e))}
+  finally{setBusy(false)}
+ }
+ async function saveRoster(e:FormEvent){
+  e.preventDefault();if(!choir||!user)return;setBusy(true);
+  try{const {error}=await supabase.from('rvm_monthly_roster').insert({choir_id:choir.id,month_start:rosterForm.month_start,duty_type:rosterForm.duty_type,title:rosterForm.title.trim(),member_user_id:rosterForm.member_user_id||null,notes:rosterForm.notes.trim()||null,created_by:user.id});if(error)throw error;setRosterForm({...rosterForm,title:'',member_user_id:'',notes:''});await loadAdminData();tell('Monthly roster entry saved.')}
+  catch(e){tell('Could not save roster: '+prettyError(e))}finally{setBusy(false)}
+ }
+ async function saveAdminItem(e:FormEvent){
+  e.preventDefault();if(!choir||!user)return;setBusy(true);
+  try{const {error}=await supabase.from('rvm_choir_admin_items').insert({choir_id:choir.id,item_type:adminForm.item_type,title:adminForm.title.trim(),details:adminForm.details.trim(),event_date:adminForm.event_date||null,status:adminForm.status,created_by:user.id});if(error)throw error;setAdminForm({...adminForm,title:'',details:'',event_date:''});await loadAdminData();tell('Choir administration item saved.')}
+  catch(e){tell('Could not save administration item: '+prettyError(e))}finally{setBusy(false)}
+ }
+ async function saveCms(e:FormEvent){
+  e.preventDefault();if(!user)return;setBusy(true);
+  try{
+   const rows=[{content_key:'welcome_headline',title:cmsForm.headlineTitle,body:cmsForm.headlineBody,updated_by:user.id,updated_at:new Date().toISOString()},{content_key:'welcome_about',title:cmsForm.aboutTitle,body:cmsForm.aboutBody,updated_by:user.id,updated_at:new Date().toISOString()}];
+   const {error}=await supabase.from('rvm_site_content').upsert(rows,{onConflict:'content_key'});if(error)throw error;
+   setSiteContent({welcome_headline:{title:cmsForm.headlineTitle,body:cmsForm.headlineBody},welcome_about:{title:cmsForm.aboutTitle,body:cmsForm.aboutBody}});tell('Welcome page content published.');
+  }catch(e){tell('Could not publish website content: '+prettyError(e))}finally{setBusy(false)}
+ }
+
  if(!isRvmBackendConfigured)return <div className="auth-screen"><div className="auth-card backend-setup-card"><div className="brand-mark auth-mark"><Music2 size={24}/></div><p className="eyebrow-light">SAFE SETUP REQUIRED</p><h1>RVM Choir is being prepared.</h1><p className="auth-subtitle">The current Vercel settings still point to the former Bool Supabase project. To protect Bool's existing users and data, this preview has intentionally blocked database access.</p><div className="backend-checklist"><strong>Before opening the library</strong><ol><li>Create or confirm a dedicated RVM Choir Supabase project.</li><li>Apply the RVM Choir migration from the development branch.</li><li>Set this project's Vercel preview variables to that project's URL and publishable key.</li><li>Configure email confirmation and password recovery redirect URLs.</li></ol></div><p className="auth-footnote">No Bool database is being used by this preview. Production will not be switched until the backend and security checks pass.</p></div></div>;
  if(authLoading)return <div className="auth-screen"><div className="auth-card"><div className="brand-mark auth-mark"><Music2 size={24}/></div><h1>RVM Choir</h1><p>Loading your secure choir workspace…</p></div></div>;
- if(!user)return <div className="auth-screen"><div className="auth-card"><div className="brand-mark auth-mark"><Music2 size={24}/></div><p className="eyebrow-light">REAL TREATS TECHNOLOGIES</p><h1>{authMode==='signup'?'Join RVM Choir':authMode==='reset'?'Reset your password':'Welcome back'}</h1><p className="auth-subtitle">A shared home for your choir’s songs, lyrics, recordings and memories.</p><form onSubmit={submitAuth} className="auth-form">{authMode==='signup'&&<label>Your name<input value={displayName} onChange={e=>setDisplayName(e.target.value)} autoComplete="name" required placeholder="Full name"/></label>}<label>Email address<span className="auth-input"><Mail size={17}/><input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required placeholder="you@example.com"/></span></label>{authMode!=='reset'&&<label>Password<span className="auth-input"><LockKeyhole size={17}/><input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete={authMode==='signup'?'new-password':'current-password'} minLength={8} required placeholder="At least 8 characters"/></span></label>}{authMessage&&<div className="auth-message" role="status">{authMessage}</div>}<button className="primary-btn auth-submit" disabled={busy}>{busy?<RefreshCw size={17} className="spin"/>:null}{authMode==='signup'?'Create account':authMode==='reset'?'Send reset email':'Sign in'}</button></form><div className="auth-links">{authMode==='signin'&&<button onClick={()=>{setAuthMode('reset');setAuthMessage('')}}>Forgot password?</button>}{authMode!=='signin'&&<button onClick={()=>{setAuthMode('signin');setAuthMessage('')}}>Back to sign in</button>}{authMode!=='signup'&&<button onClick={()=>{setAuthMode('signup');setAuthMessage('')}}>Create an account</button>}</div><p className="auth-footnote">Your choir's library is private to its members. Use a real email address so you can confirm your account and recover access.</p></div></div>;
+ if(!user&&!showAuth)return <div className="public-site">
+  <header className="public-header"><div className="public-brand"><span className="brand-mark"><Music2 size={23}/></span><span><strong>RVM Choir</strong><small>ONE HOME FOR YOUR CHOIR</small></span></div><div className="public-header-actions"><button className="outline-btn" onClick={()=>{setAuthMode('signin');setShowAuth(true)}}>Sign in</button><button className="primary-btn" onClick={()=>{setAuthMode('signup');setShowAuth(true)}}>Create account</button></div></header>
+  <main className="public-main"><section className="public-hero"><div className="public-hero-copy"><span className="public-kicker"><span/> MADE FOR CHOIR LIFE</span><h1>{siteContent.welcome_headline?.title||'A choir that stays in harmony.'}</h1><p>{siteContent.welcome_headline?.body||'RVM Choir brings your music library, rehearsals, monthly duties, Sunday service planning and choir administration into one organised space.'}</p><div className="public-hero-actions"><button className="primary-btn" onClick={()=>{setAuthMode('signup');setShowAuth(true)}}>Request choir access <ShieldCheck size={17}/></button><button className="public-text-btn" onClick={()=>{setAuthMode('signin');setShowAuth(true)}}>Already have an account? Sign in</button></div><div className="public-trust"><span><CheckCircle2 size={16}/> Owner-approved membership</span><span><CheckCircle2 size={16}/> Private choir workspaces</span></div></div><div className="public-hero-art"><div className="public-orbit orbit-one"/><div className="public-orbit orbit-two"/><div className="public-note note-one">♪</div><div className="public-note note-two">♫</div><div className="public-hero-emblem"><Music2 size={55}/><span>Sing · Serve · Stay in sync</span></div><div className="public-mini-card"><CalendarCheck size={19}/><span><strong>Choir Sunday</strong><small>Plan the service together</small></span></div><div className="public-mini-card mini-card-bottom"><Users size={19}/><span><strong>Monthly roster</strong><small>Know who's on duty</small></span></div></div></section>
+  <section className="public-features"><div className="public-section-heading"><span>ONE PLATFORM, MANY PURPOSES</span><h2>{siteContent.welcome_about?.title||'More than a song library'}</h2><p>{siteContent.welcome_about?.body||'Find lyrics, arrangements, recordings and performance history; coordinate uniform rosters, backup and press-team duty; plan choir Sundays; and keep everyone aligned between rehearsals.'}</p></div><div className="public-feature-grid"><article><span><Library size={21}/></span><h3>Music library</h3><p>Organise song lyrics, arrangements, rehearsal audio, scores and performance history.</p></article><article><span><Shirt size={21}/></span><h3>Monthly duty rosters</h3><p>Coordinate uniform, backup and press-team assignments, month by month.</p></article><article><span><CalendarCheck size={21}/></span><h3>Choir Sunday planning</h3><p>Keep service plans, rehearsals, meetings, announcements and follow-ups together.</p></article><article><span><Users size={21}/></span><h3>Clear roles and approvals</h3><p>Accounts stay restricted until the choir owner approves access and assigns responsibilities.</p></article></div></section>
+  <section className="public-access"><div><span className="public-kicker">A PRIVATE SPACE FOR YOUR CHOIR</span><h2>Your account starts with a request.</h2><p>Anyone can explore this welcome page. Create an account to request access; the owner reviews requests before members can enter the choir workspace.</p></div><button className="primary-btn" onClick={()=>{setAuthMode('signup');setShowAuth(true)}}>Create an account <Plus size={17}/></button></section></main><footer className="public-footer"><span>RVM Choir · A RealTreats Technologies concept</span><span>Made for music, memory & ministry.</span></footer>
+ </div>;
+ if(!user)return <div className="auth-screen"><div className="auth-card"><button className="public-back-btn" onClick={()=>setShowAuth(false)}>← Back to welcome page</button><div className="brand-mark auth-mark"><Music2 size={24}/></div><p className="eyebrow-light">REAL TREATS TECHNOLOGIES</p><h1>{authMode==='signup'?'Join RVM Choir':authMode==='reset'?'Reset your password':'Welcome back'}</h1><p className="auth-subtitle">A shared home for your choir’s songs, lyrics, recordings and memories.</p><form onSubmit={submitAuth} className="auth-form">{authMode==='signup'&&<label>Your name<input value={displayName} onChange={e=>setDisplayName(e.target.value)} autoComplete="name" required placeholder="Full name"/></label>}<label>Email address<span className="auth-input"><Mail size={17}/><input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required placeholder="you@example.com"/></span></label>{authMode!=='reset'&&<label>Password<span className="auth-input"><LockKeyhole size={17}/><input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete={authMode==='signup'?'new-password':'current-password'} minLength={8} required placeholder="At least 8 characters"/></span></label>}{authMessage&&<div className="auth-message" role="status">{authMessage}</div>}<button className="primary-btn auth-submit" disabled={busy}>{busy?<RefreshCw size={17} className="spin"/>:null}{authMode==='signup'?'Create account':authMode==='reset'?'Send reset email':'Sign in'}</button></form><div className="auth-links">{authMode==='signin'&&<button onClick={()=>{setAuthMode('reset');setAuthMessage('')}}>Forgot password?</button>}{authMode!=='signin'&&<button onClick={()=>{setAuthMode('signin');setAuthMessage('')}}>Back to sign in</button>}{authMode!=='signup'&&<button onClick={()=>{setAuthMode('signup');setAuthMessage('')}}>Create an account</button>}</div><p className="auth-footnote">Your choir's library is private to its members. Use a real email address so you can confirm your account and recover access.</p></div></div>;
+ if(user&&profileLoading)return <div className="auth-screen"><div className="auth-card"><div className="brand-mark auth-mark"><Music2 size={24}/></div><h1>Checking your access</h1><p>RVM Choir is securely checking your account approval.</p></div></div>;
+ if(user&&profile&&profile.approval_status!=='approved')return <div className="auth-screen"><div className="auth-card approval-card"><div className="brand-mark auth-mark"><ShieldCheck size={24}/></div><p className="eyebrow-light">MEMBERSHIP REVIEW</p><h1>{profile.approval_status==='pending'?'Your request is with the choir owner':profile.approval_status==='rejected'?'Access request not approved':'Your access is paused'}</h1><p className="auth-subtitle">{profile.approval_status==='pending'?'Your account is created, but the private choir workspace remains locked until the owner reviews and approves your request. You can sign out and return later.':profile.approval_status==='rejected'?'The owner has not approved this account. Contact the choir administrator if you believe this is a mistake.':'Your account is currently suspended. Contact the choir owner for help.'}</p><div className="approval-status-pill"><span/>{profile.approval_status.toUpperCase()}</div><p className="auth-footnote">You can see the public welcome page, but songs, rosters, recordings and administration tools are restricted until access is approved.</p><button className="primary-btn auth-submit" onClick={async()=>{await supabase.auth.signOut();setShowAuth(false)}}><LogOut size={16}/> Sign out</button></div></div>;
+
  if(!choir)return <div className="auth-screen"><div className="auth-card workspace-setup"><div className="brand-mark auth-mark"><Music2 size={24}/></div><p className="eyebrow-light">ONE MORE STEP</p><h1>Your choir starts here.</h1><p className="auth-subtitle">Create a new choir workspace, or join one with an invite code from your choir director.</p><div className="setup-tabs"><button className={setupMode==='create'?'setup-tab active':'setup-tab'} onClick={()=>setSetupMode('create')}>Create a choir</button><button className={setupMode==='join'?'setup-tab active':'setup-tab'} onClick={()=>setSetupMode('join')}>Join a choir</button></div>{setupMode==='create'?<form className="auth-form" onSubmit={createChoir}><label>Choir or church name<input value={choirName} onChange={e=>setChoirName(e.target.value)} required minLength={2} maxLength={120} placeholder="e.g. Grace Voices Choir"/></label><button className="primary-btn auth-submit" disabled={busy}>{busy?'Creating…':'Create choir workspace'}</button></form>:<form className="auth-form" onSubmit={joinChoir}><label>Choir invite code<input value={inviteCode} onChange={e=>setInviteCode(e.target.value)} required minLength={8} placeholder="Paste the code shared by your director"/></label><button className="primary-btn auth-submit" disabled={busy}>{busy?'Joining…':'Join choir'}</button></form>}<button className="auth-secondary" onClick={signOut}><LogOut size={16}/> Sign out</button></div>{notice&&<div className="toast"><Check size={17}/>{notice}<button onClick={()=>setNotice('')} aria-label="Dismiss"><X size={15}/></button></div>}</div>;
 
  return <div className="app-shell">
