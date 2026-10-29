@@ -1,0 +1,1 @@
+create policy "Assigned music directors create assignments" on public.rvm_music_assignments for insert to authenticated with check (public.rvm_is_approved() and exists (select 1 from public.rvm_member_roles mr where mr.user_id = auth.uid() and mr.choir_id = rvm_music_assignments.choir_id and mr.role_key = 'music_director'));
