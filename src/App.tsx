@@ -90,7 +90,7 @@ export default function App(){
    if(!membership){setChoir(null);setRole('member');setSongs([]);return}
    const {data:choirData,error:choirError}=await supabase.from('choirs').select('id,name,invite_code').eq('id',membership.choir_id).single();
    if(choirError)throw choirError;
-   setChoir(choirData as Choir);setRole(membership.role);
+   setChoir(choirData as Choir);setRole(profile?.role||membership.role);
   }catch(e){tell('Could not load your choir: '+prettyError(e))}
   finally{setBusy(false)}
  },[tell]);
