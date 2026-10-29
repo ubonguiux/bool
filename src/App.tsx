@@ -23,7 +23,16 @@ export default function App(){
  const [profile,setProfile]=useState<RvmProfile|null>(null);
  const [profileLoading,setProfileLoading]=useState(false);
  const [siteContent,setSiteContent]=useState<Record<string,{title:string;body:string}>>({welcome_headline:{title:'A choir that stays in harmony.',body:'RVM Choir brings your music library, rehearsals, monthly duties, Sunday service planning and choir administration into one organised space.'},welcome_about:{title:'More than a song library',body:'Find lyrics, arrangements, recordings and performance history; coordinate uniform rosters, backup and press-team duty; plan choir Sundays; and keep everyone aligned between rehearsals.'},church_theme:{title:'Monthly church theme',body:'The church owner can publish this month’s theme and scripture reference here.'},church_logo:{title:'Church logo URL',body:''}});
- const [memberProfiles,setMemberProfiles]=useState<RvmProfile[]>([]);\n const [directoryProfiles,setDirectoryProfiles]=useState<any[]>([]);\n const [communityMessages,setCommunityMessages]=useState<ChoirMessage[]>([]);\n const [messageBody,setMessageBody]=useState('');\n const [messageTopic,setMessageTopic]=useState('');\n const [messageRecipient,setMessageRecipient]=useState('');\n const [avatarFile,setAvatarFile]=useState<File|null>(null);\n const [memberForm,setMemberForm]=useState({display_name:'',voice_part:'',bio:'',instruments:''});\n const [musicAssignments,setMusicAssignments]=useState<MusicAssignment[]>([]);\n const [assignmentForm,setAssignmentForm]=useState({title:'',event_date:'',assignment_type:'service',instrument_name:'Keyboard/Piano',assigned_user_id:'',musical_key:'',tempo_bpm:'',time_signature:'4/4',notes:''});
+ const [memberProfiles,setMemberProfiles]=useState<RvmProfile[]>([]);
+ const [directoryProfiles,setDirectoryProfiles]=useState<any[]>([]);
+ const [communityMessages,setCommunityMessages]=useState<ChoirMessage[]>([]);
+ const [messageBody,setMessageBody]=useState('');
+ const [messageTopic,setMessageTopic]=useState('');
+ const [messageRecipient,setMessageRecipient]=useState('');
+ const [avatarFile,setAvatarFile]=useState<File|null>(null);
+ const [memberForm,setMemberForm]=useState({display_name:'',voice_part:'',bio:'',instruments:''});
+ const [musicAssignments,setMusicAssignments]=useState<MusicAssignment[]>([]);
+ const [assignmentForm,setAssignmentForm]=useState({title:'',event_date:'',assignment_type:'service',instrument_name:'Keyboard/Piano',assigned_user_id:'',musical_key:'',tempo_bpm:'',time_signature:'4/4',notes:''});
  const [rosterRows,setRosterRows]=useState<RosterRow[]>([]);
  const [adminItems,setAdminItems]=useState<AdminItem[]>([]);
  const [rosterForm,setRosterForm]=useState({month_start:new Date().toISOString().slice(0,7)+'-01',duty_type:'uniform',title:'',member_user_id:'',notes:''});
