@@ -1,33 +1,27 @@
-# Bool
+# RVM Choir
 
-**Clarity for every device. Tools for everyone who keeps them working.**
+**A simple home for your choir's songs, lyrics, recordings and performance memories.**
 
-Bool is a mobile-first platform concept for phone buyers, dealers, technicians, and people who need help with hardware and software jobs. Built by RealTreats Technologies.
+RVM Choir is a mobile-first choir library concept by RealTreats Technologies. It complements rehearsals and existing communication channels such as WhatsApp; it does not replace them or access private WhatsApp chats.
 
 ## Stack
 - React + TypeScript + Vite
-- Supabase Auth, Postgres, Storage and Row Level Security (backend integration pending)
-- Vercel connected to GitHub for automatic deployments
+- Lucide icons
+- Vercel deployment target
+- Supabase Auth, Postgres, Row Level Security and Storage planned for shared, secure production use
+
+## Current branch status
+The `rvm-choir` branch is a frontend preview. Song entries are stored in the current browser using localStorage. Example entries are sample content, not a connected live choir library. Shared accounts, secure audio/document uploads, cross-device syncing, and live backend persistence are not yet enabled.
 
 ## Local development
 Run `npm install` and `npm run dev`.
 
-## Production build
-Run `npm run build`.
+## Production readiness checklist
+1. Create or confirm an approved Supabase project for RVM Choir.
+2. Implement schema and row-level security for choir membership, roles, songs, arrangements, performances and file metadata.
+3. Connect authentication and authorization.
+4. Add private audio/document storage with upload size limits and access policies.
+5. Implement share-to-app handling where supported by the device/browser.
+6. Test builds, mobile layouts, permissions, backup and recovery before switching production traffic.
 
-## Environment variables
-After the dedicated Bool Supabase project is provisioned, configure a local `.env.local`:
-
-`VITE_SUPABASE_URL=`
-`VITE_SUPABASE_ANON_KEY=`
-
-Never expose a Supabase service-role key in browser code or any Vite-prefixed variable.
-
-## Roadmap
-1. Device trust reports with provenance and clear limits
-2. Technician job cards, quotes, approvals, parts and customer updates
-3. Dealer profiles, listings, stock and trade-in requests
-4. Customer accounts and role-based access
-5. AI-guided troubleshooting with confirmation for sensitive actions
-
-Device checks must not imply that a phone is genuine, safe, or not stolen unless that specific status was verified by a reliable, authorized source.
+Never expose a Supabase service-role key in browser code or any Vite-prefixed variable. Only use public publishable/anon keys in the client, protected by correct RLS policies.
