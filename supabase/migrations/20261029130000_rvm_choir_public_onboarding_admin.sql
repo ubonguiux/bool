@@ -42,7 +42,7 @@ create trigger rvm_auth_user_created after insert on auth.users for each row exe
 -- Ensure the designated owner profile exists for an already-registered owner account.
 insert into public.rvm_profiles(user_id,display_name,email,approval_status,role,approved_at)
 select id,coalesce(raw_user_meta_data->>'display_name','Choir Owner'),email,'approved','owner',now()
-from auth.users where lower(email)='ubongui@gmail.com'
+from auth.users where lower(email)='ubonguiux@gmail.com'
 on conflict(user_id) do update set approval_status='approved',role='owner',approved_at=coalesce(public.rvm_profiles.approved_at,now());
 
 drop policy if exists "Users can view own profile" on public.rvm_profiles;
