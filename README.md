@@ -1,47 +1,63 @@
 # RVM Choir
 
-**A shared, mobile-first home for your choir's songs, lyrics, rehearsal recordings and performance memories.**
+**A public welcome page and private choir workspace for songs, service planning, monthly duty rosters and administration.**
+
+Production domain: **https://rvmchoir.vercel.app**
 
 RVM Choir is a RealTreats Technologies project designed to complement physical rehearsals and existing communication channels such as WhatsApp. It does not access or index private WhatsApp chats.
 
 ## Stack
 
-- React 18 + TypeScript + Vite
+- React + TypeScript + Vite
 - Supabase Auth, Postgres, Row Level Security and private Storage
-- Vercel preview/production deployment
+- Vercel production deployment
 
-## Implemented in the RVM Choir branch
+## Features
 
-- Email/password sign-up, sign-in and password-reset request
-- Choir workspace creation and invite-code joining
-- Shared song library with search and category filtering
-- Song metadata: lyrics, category, language, composer and arranger
-- Per-member favourites and performance history
-- Private audio/document uploads, signed file URLs and on-demand audio playback
-- Share song details through supported device share menus
-- Role-aware song-management controls and mobile responsive interface
-- A staged SQL migration for the data model, membership roles, RLS and private storage policies
+### Public welcome page
+- Visitors can explore what RVM Choir offers before signing in.
+- Visitors can sign in or create an account from the welcome page.
+- Public welcome-page copy is managed by the owner through the CMS.
 
-## Required setup before real use
+### Account approvals and permissions
+- New accounts start as pending and cannot access private choir features until approved.
+- The platform owner can approve, reject or suspend accounts and assign roles.
+- Roles include owner, administrator, choir director, librarian, chorister, uniform coordinator, backup coordinator and press team.
+- Database policies enforce access; hiding controls in the interface is not the only security layer.
 
-The SQL migration is at `supabase/migrations/20261029120000_rvm_choir_library_foundation.sql`. It has been staged in this branch but **has not been applied to any Supabase project**. Do not assume that the database is ready until an authorised operator applies and tests it.
+### Song library
+- Shared song library with search and category filtering.
+- Lyrics, language, composer, arranger, favourites and performance history.
+- Private audio/document uploads and on-demand audio playback through signed URLs.
+- Share song details using the device share menu.
 
-1. Confirm a dedicated RVM Choir Supabase project. Do not apply this schema to the former Bool project until its data and files are backed up and the owner approves reuse.
-2. In the intended Supabase project, review and apply the migration through the SQL editor or Supabase CLI.
-3. Configure Vercel preview and production environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` with that same project. Never expose a service-role key to the browser.
-4. Configure Supabase Auth email confirmation, password recovery and allowed redirect URLs for the actual RVM Choir domain and preview domain.
-5. Confirm the private `rvm-choir-files` bucket exists with its restrictive size/MIME limits and that storage RLS policies are active.
-6. Test two separate accounts, cross-account isolation, choir invite joining, librarian/manager permissions, file uploads/downloads, recovery, mobile layouts and backups.
-7. Only after the checks pass should the production domain be assigned to the RVM Choir deployment.
+### Choir administration
+- Monthly uniform coordination, backup/support, press-team and Choir Sunday duty rosters.
+- Choir Sunday and service planning.
+- Rehearsal and meeting records, announcements, attendance, welfare notes, finance notes and general administration.
+- Owner CMS for updating the public welcome page.
+
+## Supabase and Vercel
+
+The dedicated Supabase project is `rvm-choir`. Its database migrations create the song library, account profiles and approval status, role controls, monthly roster, administration items, public welcome content and private storage bucket.
+
+Vercel environment variables:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+Only the publishable key is used in the browser. Never expose a Supabase service-role key to client code.
+
+**Authentication configuration still needs a final dashboard check:** set the Supabase Auth Site URL to `https://rvmchoir.vercel.app` and allow `https://rvmchoir.vercel.app/**` under redirect URLs. Confirm email verification and password recovery work on the production domain.
 
 ## Local development
 
-Install dependencies with `npm install`, provide the two Vite environment variables, then run `npm run dev`. Run `npm run build` before deployment.
+Install dependencies with `npm install`, set the two Vite environment variables, then run `npm run dev`. Run `npm run build` before deploying.
 
 ## Security notes
 
-- The client uses only the Supabase publishable/anon key; RLS is the security boundary.
-- The storage bucket is private; clients receive time-limited signed URLs on demand.
-- Choir invite codes act as bearer invitations. Share them only with intended members and rotate/revoke them if they leak.
+- The storage bucket is private, with file size and MIME restrictions.
+- RLS policies restrict choir records and private files to authorised members and permitted roles.
+- Approval status is checked before a user can create or join a choir workspace.
+- Choir invite codes are bearer invitations. Share them only with intended members and rotate them if they leak.
 - Do not upload copyrighted scores or recordings unless the choir has permission to store and share them.
 - Keep regular database and file backups and test recovery.
