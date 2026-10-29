@@ -311,6 +311,14 @@ export default function App(){
   try{const {error}=await supabase.from('rvm_music_assignments').insert({choir_id:choir.id,title:assignmentForm.title.trim(),event_date:assignmentForm.event_date||null,assignment_type:assignmentForm.assignment_type,instrument_name:assignmentForm.instrument_name,assigned_user_id:assignmentForm.assigned_user_id||null,musical_key:assignmentForm.musical_key||null,tempo_bpm:assignmentForm.tempo_bpm?Number(assignmentForm.tempo_bpm):null,time_signature:assignmentForm.time_signature||null,notes:assignmentForm.notes.trim(),created_by:user.id});if(error)throw error;setAssignmentForm({...assignmentForm,title:'',event_date:'',assigned_user_id:'',musical_key:'',tempo_bpm:'',notes:''});await loadCommunityData();tell('Music assignment saved.')}catch(e){tell('Could not save assignment: '+prettyError(e))}finally{setBusy(false)}
  }
 
+ async function assignMemberRole(e:FormEvent){
+  e.preventDefault();if(!choir||!user||!roleAssignmentForm.user_id)return;setBusy(true);
+  try{
+   const {error}=await supabase.from('rvm_member_roles').insert({choir_id:choir.id,user_id:roleAssignmentForm.user_id,role_key:roleAssignmentForm.role_key,instrument_name:roleAssignmentForm.instrument_name.trim()||null,assigned_by:user.id});
+   if(error)throw error;
+   setRoleAssignmentForm({...roleAssignmentForm,instrument_name:''});await loadCommunityData();tell('Additional role assigned.');
+  }catch(e){tell('Could not assign role: '+prettyError(e))}finally{setBusy(false)}
+ }
  const loadAdminData=useCallback(async()=>{
   if(!choir)return;
   if(profile?.role==='owner'){
