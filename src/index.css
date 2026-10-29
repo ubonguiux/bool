@@ -247,3 +247,4 @@ img{max-width:100%}
 @media(max-width:560px){.member-directory-grid{grid-template-columns:1fr}.chat-feed{max-height:300px}.member-card{padding:11px}}
 
 /* RVM Choir unread badge styling */
+.unread-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#155bff;color:#fff;font-size:10px;font-weight:800;margin-left:auto}.role-assignment-list{margin-top:16px}.role-assignment-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid #e7ebf2}.role-assignment-row>div{display:flex;flex-direction:column;gap:4px}.role-assignment-row strong{font-size:12px}.role-assignment-row small{font-size:10px;color:#667085;text-transform:capitalize}.subtle-btn{border:1px solid #d7deea;background:#fff;color:#172033;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:700}
