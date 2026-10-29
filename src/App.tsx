@@ -238,6 +238,36 @@ export default function App(){
  }
  const share=async(s:Song)=>{const text='RVM Choir · '+s.title+(s.composer?'\nComposer: '+s.composer:'')+(s.lyrics?'\n\n'+s.lyrics:'');try{if(navigator.share)await navigator.share({title:s.title,text});else{await navigator.clipboard.writeText(text);tell('Song details copied for sharing.')}}catch(e){if(e instanceof Error&&e.name!=='AbortError')tell('Could not share: '+e.message)}};
 
+
+ const loadCommunityData=useCallback(async()=>{
+  if(!choir||!user)return;
+  const [{data:profiles,error:profileError},{data:messages,error:messageError},{data:assignments,error:assignmentError}]=await Promise.all([
+   supabase.from('rvm_profiles').select('user_id,display_name,email,approval_status,role,created_at,avatar_url,voice_part,bio,instruments').eq('approval_status','approved').order('display_name'),
+   supabase.from('rvm_messages').select('id,sender_id,recipient_id,topic,body,created_at').eq('choir_id',choir.id).order('created_at',{ascending:true}).limit(150),
+   supabase.from('rvm_music_assignments').select('id,title,event_date,assignment_type,instrument_name,assigned_user_id,musical_key,tempo_bpm,time_signature,notes,status').eq('choir_id',choir.id).order('event_date',{ascending:true})
+  ]);
+  if(profileError)tell('Could not load member directory: '+profileError.message);else{setDirectoryProfiles(profiles||[]);const me=(profiles||[]).find(p=>p.user_id===user.id);if(me)setMemberForm({display_name:me.display_name||'',voice_part:me.voice_part||'',bio:me.bio||'',instruments:(me.instruments||[]).join(', ')});}
+  if(messageError)tell('Could not load messages: '+messageError.message);else setCommunityMessages((messages||[]) as ChoirMessage[]);
+  if(assignmentError)tell('Could not load music assignments: '+assignmentError.message);else setMusicAssignments((assignments||[]) as MusicAssignment[]);
+ },[choir,user,tell]);
+ useEffect(()=>{if(active==='Community & music'&&profile?.approval_status==='approved')void loadCommunityData()},[active,profile,loadCommunityData]);
+ async function saveMemberProfile(e:FormEvent){
+  e.preventDefault();if(!user)return;setBusy(true);
+  try{let avatarUrl=directoryProfiles.find(p=>p.user_id===user.id)?.avatar_url||'';
+   if(avatarFile){if(!['image/png','image/jpeg','image/webp'].includes(avatarFile.type))throw new Error('Choose a PNG, JPG or WebP image.');if(avatarFile.size>5*1024*1024)throw new Error('Profile pictures must be 5 MB or smaller.');const path=user.id+'/'+Date.now()+'-'+safeFilename(avatarFile.name);const {error:uploadError}=await supabase.storage.from('rvm-choir-avatars').upload(path,avatarFile,{contentType:avatarFile.type,upsert:false});if(uploadError)throw uploadError;avatarUrl=supabase.storage.from('rvm-choir-avatars').getPublicUrl(path).data.publicUrl;}
+   const {error}=await supabase.from('rvm_profiles').update({display_name:memberForm.display_name.trim(),voice_part:memberForm.voice_part||null,bio:memberForm.bio.trim(),instruments:memberForm.instruments.split(',').map(x=>x.trim()).filter(Boolean).slice(0,8),avatar_url:avatarUrl||null}).eq('user_id',user.id);if(error)throw error;setAvatarFile(null);tell('Your member profile has been saved.');await loadCommunityData();
+  }catch(e){tell('Could not save profile: '+prettyError(e))}finally{setBusy(false)}
+ }
+ async function sendCommunityMessage(e:FormEvent){
+  e.preventDefault();if(!choir||!user||!messageBody.trim())return;setBusy(true);
+  try{const {error}=await supabase.from('rvm_messages').insert({choir_id:choir.id,sender_id:user.id,recipient_id:messageRecipient||null,topic:messageTopic.trim()||null,body:messageBody.trim()});if(error)throw error;setMessageBody('');await loadCommunityData();}
+  catch(e){tell('Could not send message: '+prettyError(e))}finally{setBusy(false)}
+ }
+ async function saveMusicAssignment(e:FormEvent){
+  e.preventDefault();if(!choir||!user)return;setBusy(true);
+  try{const {error}=await supabase.from('rvm_music_assignments').insert({choir_id:choir.id,title:assignmentForm.title.trim(),event_date:assignmentForm.event_date||null,assignment_type:assignmentForm.assignment_type,instrument_name:assignmentForm.instrument_name,assigned_user_id:assignmentForm.assigned_user_id||null,musical_key:assignmentForm.musical_key||null,tempo_bpm:assignmentForm.tempo_bpm?Number(assignmentForm.tempo_bpm):null,time_signature:assignmentForm.time_signature||null,notes:assignmentForm.notes.trim(),created_by:user.id});if(error)throw error;setAssignmentForm({...assignmentForm,title:'',event_date:'',assigned_user_id:'',musical_key:'',tempo_bpm:'',notes:''});await loadCommunityData();tell('Music assignment saved.')}catch(e){tell('Could not save assignment: '+prettyError(e))}finally{setBusy(false)}
+ }
+
  const loadAdminData=useCallback(async()=>{
   if(!choir)return;
   if(profile?.role==='owner'){
