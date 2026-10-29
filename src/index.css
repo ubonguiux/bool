@@ -316,3 +316,28 @@ img{max-width:100%}
  .public-header{padding-inline:10px}
  .public-header-actions .primary-btn,.public-header-actions .outline-btn{padding-inline:8px;font-size:11px}
 }
+
+
+/* Mobile app-style footer navigation inspired by the raised-center sketch */
+.mobile-footer-nav{display:none}
+@media(max-width:720px){
+ .mobile-menu{display:none!important}
+ .mobile-footer-nav{position:fixed;left:12px;right:12px;bottom:max(10px,env(safe-area-inset-bottom));z-index:85;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:end;min-height:68px;padding:7px 5px 5px;border:1px solid rgba(224,231,222,.95);border-radius:22px;background:rgba(255,255,255,.96);box-shadow:0 8px 28px rgba(22,42,27,.16);backdrop-filter:blur(16px)}
+ .footer-nav-item{min-width:0;min-height:48px;padding:4px 1px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;border-radius:12px;background:transparent;color:#778279;font:inherit;cursor:pointer}
+ .footer-nav-item span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.1}
+ .footer-nav-item svg{flex:0 0 auto}
+ .footer-nav-item.is-active{color:#236b4a;background:#eef5ed}
+ .footer-nav-center{display:flex;align-items:flex-start;justify-content:center;min-width:0;height:64px;border:0;background:transparent;cursor:pointer;transform:translateY(-17px)}
+ .footer-nav-center-ring{width:58px;height:58px;display:grid;place-items:center;border-radius:50%;border:5px solid #fff;background:#236b4a;color:#fff;box-shadow:0 5px 16px rgba(22,67,43,.3);outline:1px solid #dfe8df}
+ .main-area{padding-bottom:100px}
+ .app-footer{padding-bottom:105px}
+ .share-page-floater{bottom:96px}
+ .sidebar{z-index:100}
+ .scrim{z-index:90}
+}
+@media(max-width:360px){
+ .mobile-footer-nav{left:7px;right:7px;grid-template-columns:repeat(5,minmax(0,1fr));min-height:64px}
+ .footer-nav-item span{font-size:9px}
+ .footer-nav-center-ring{width:53px;height:53px}
+}
+@media(min-width:721px){.mobile-footer-nav{display:none!important}}
