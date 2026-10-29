@@ -352,3 +352,14 @@ begin
 end;
 $$;
 grant execute on function public.rvm_rotate_invite_code() to authenticated;
+
+
+-- Explicit table grants complement RLS (RLS does not grant SQL privileges).
+grant select on public.choirs to authenticated;
+grant update (name, description) on public.choirs to authenticated;
+grant select, insert, update, delete on public.choir_members to authenticated;
+grant select, insert, update, delete on public.songs to authenticated;
+grant select, insert, update, delete on public.song_arrangements to authenticated;
+grant select, insert, update, delete on public.song_files to authenticated;
+grant select, insert, update, delete on public.song_performances to authenticated;
+grant select, insert, delete on public.song_favourites to authenticated;
