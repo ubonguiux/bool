@@ -116,6 +116,19 @@ as $$
   );
 $$;
 
+create or replace function public.rvm_is_choir_owner(target_choir_id uuid)
+returns boolean
+language sql stable security definer
+set search_path = public, auth
+as $
+  select exists (
+    select 1 from public.choir_members m
+    where m.choir_id = target_choir_id
+      and m.user_id = auth.uid()
+      and m.role = 'owner'
+  );
+$;
+
 create or replace function public.rvm_create_choir(choir_name text, choir_description text default null)
 returns uuid
 language plpgsql security definer
@@ -158,10 +171,18 @@ create policy "Members can read membership roster" on public.choir_members
 for select to authenticated using (user_id = auth.uid() or public.rvm_is_choir_member(choir_id));
 drop policy if exists "Managers can add choir members" on public.choir_members;
 create policy "Managers can add choir members" on public.choir_members
-for insert to authenticated with check (public.rvm_can_manage_choir(choir_id));
+for insert to authenticated with check (
+  public.rvm_can_manage_choir(choir_id)
+  and (role = 'member' or public.rvm_is_choir_owner(choir_id))
+);
 drop policy if exists "Managers can update choir members" on public.choir_members;
 create policy "Managers can update choir members" on public.choir_members
-for update to authenticated using (public.rvm_can_manage_choir(choir_id)) with check (public.rvm_can_manage_choir(choir_id));
+for update to authenticated
+using (public.rvm_can_manage_choir(choir_id))
+with check (
+  public.rvm_can_manage_choir(choir_id)
+  and (role = 'member' or public.rvm_is_choir_owner(choir_id))
+);
 drop policy if exists "Managers can remove choir members" on public.choir_members;
 create policy "Managers can remove choir members" on public.choir_members
 for delete to authenticated using (public.rvm_can_manage_choir(choir_id));
@@ -211,6 +232,7 @@ with check (user_id = auth.uid() and exists (select 1 from public.songs s where 
 grant execute on function public.rvm_create_choir(text, text) to authenticated;
 grant execute on function public.rvm_is_choir_member(uuid) to authenticated;
 grant execute on function public.rvm_can_manage_choir(uuid) to authenticated;
+grant execute on function public.rvm_is_choir_owner(uuid) to authenticated;
 
 
 -- Private object storage for choir recordings, scores and documents.
