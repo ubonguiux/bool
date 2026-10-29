@@ -319,11 +319,6 @@ export default function App(){
    setRoleAssignmentForm({...roleAssignmentForm,instrument_name:''});await loadCommunityData();tell('Additional role assigned.');
   }catch(e){tell('Could not assign role: '+prettyError(e))}finally{setBusy(false)}
  }
- async function assignMemberRole(e:FormEvent){
-  e.preventDefault();if(!choir||!user||!roleAssignmentForm.user_id)return;setBusy(true);
-  try{const {error}=await supabase.from('rvm_member_roles').insert({choir_id:choir.id,user_id:roleAssignmentForm.user_id,role_key:roleAssignmentForm.role_key,instrument_name:roleAssignmentForm.instrument_name.trim()||null,assigned_by:user.id});if(error)throw error;setRoleAssignmentForm({...roleAssignmentForm,instrument_name:''});await loadCommunityData();tell('Additional role assigned.')}
-  catch(e){tell('Could not assign role: '+prettyError(e))}finally{setBusy(false)}
- }
  const loadAdminData=useCallback(async()=>{
   if(!choir)return;
   if(profile?.role==='owner'){
