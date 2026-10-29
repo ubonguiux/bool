@@ -270,7 +270,7 @@ export default function App(){
    const list=(messages||[]) as ChoirMessage[];setCommunityMessages(list);
    if(readsError)tell('Could not load read receipts: '+readsError.message);
    else{
-    const readIds=new Set((reads||[]).map((x:any)=>x.message_id));
+    const readIds=new Set(((reads||[]) as MessageRead[]).map(x=>x.message_id));
     const unread=list.filter(m=>m.sender_id!==user.id&&!readIds.has(m.id)&&(m.recipient_id===null||m.recipient_id===user.id));
     setUnreadMessageCount(unread.length);
     if(active==='Community & music'&&unread.length){
