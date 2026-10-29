@@ -190,7 +190,7 @@ export default function App(){
     const normalizedPhone=phone.trim().replace(/[\\s()-]/g,'');
     if(!/^\\+[1-9]\\d{7,14}$/.test(normalizedPhone))throw new Error('Enter your phone number with country code, for example +2348069929435.');
     if(!phoneOtpSent){
-     const {error}=await supabase.auth.signInWithOtp({phone:normalizedPhone,options:{shouldCreateUser:authMode==='signup',data:{display_name:displayName.trim()}}});
+     const {error}=await supabase.auth.signInWithOtp({phone:normalizedPhone,options:{channel:'whatsapp',shouldCreateUser:authMode==='signup',data:{display_name:displayName.trim()}}});
      if(error)throw error;
      setPhone(normalizedPhone);setPhoneOtpSent(true);setAuthMessage('Verification code requested. Check your SMS messages and enter the code here.');
     }else{
