@@ -268,3 +268,32 @@ using (
   bucket_id = 'rvm-choir-files'
   and public.rvm_can_manage_choir(((storage.foldername(name))[1])::uuid)
 );
+
+
+-- Secure member onboarding: choir owners can share a random invite code.
+alter table public.choirs
+  add column if not exists invite_code text not null default encode(gen_random_bytes(12), 'hex');
+create unique index if not exists choirs_invite_code_idx on public.choirs(invite_code);
+
+create or replace function public.rvm_join_choir(choir_invite_code text)
+returns uuid
+language plpgsql security definer
+set search_path = public, auth
+as $$
+declare target_id uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'Sign in is required to join a choir';
+  end if;
+  select id into target_id from public.choirs
+  where invite_code = lower(trim(choir_invite_code));
+  if target_id is null then
+    raise exception 'This invite code is invalid';
+  end if;
+  insert into public.choir_members(choir_id,user_id,role)
+  values (target_id,auth.uid(),'member')
+  on conflict (choir_id,user_id) do nothing;
+  return target_id;
+end;
+$$;
+grant execute on function public.rvm_join_choir(text) to authenticated;
