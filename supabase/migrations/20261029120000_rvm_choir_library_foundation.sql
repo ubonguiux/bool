@@ -120,14 +120,14 @@ create or replace function public.rvm_is_choir_owner(target_choir_id uuid)
 returns boolean
 language sql stable security definer
 set search_path = public, auth
-as $
+as $$
   select exists (
     select 1 from public.choir_members m
     where m.choir_id = target_choir_id
       and m.user_id = auth.uid()
       and m.role = 'owner'
   );
-$;
+$$;
 
 create or replace function public.rvm_create_choir(choir_name text, choir_description text default null)
 returns uuid
