@@ -103,7 +103,7 @@ export default function App(){
   e.preventDefault();setBusy(true);setAuthMessage('');
   try{
    if(authMode==='signup'){
-    const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{data:{display_name:displayName.trim()}}});
+    const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{data:{display_name:displayName.trim()},emailRedirectTo:window.location.origin}});
     if(error)throw error;
     if(data.session){setAuthMessage('Account created. You are signed in.');}
     else{setAuthMessage('Account created. Check your email to confirm your address, then sign in.');setAuthMode('signin')}
