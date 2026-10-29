@@ -12,6 +12,8 @@ type RosterRow = { id:string; month_start:string; duty_type:string; title:string
 type AdminItem = { id:string; item_type:string; title:string; details:string; event_date:string|null; status:string };
 type ChoirMessage = {id:string;sender_id:string;recipient_id:string|null;topic:string|null;body:string;created_at:string};
 type MusicAssignment = {id:string;title:string;event_date:string|null;assignment_type:string;instrument_name:string;assigned_user_id:string|null;musical_key:string|null;tempo_bpm:number|null;time_signature:string|null;notes:string;status:string};
+type MemberRoleAssignment = {id:string;user_id:string;role_key:string;instrument_name:string|null;created_at:string};
+type MessageRead = {message_id:string;user_id:string;read_at:string};
 const categories = ['All Songs','Hymns','Praise & Worship','Special Numbers','Christmas','Anthems','Traditional'];
 const fmt=(date:string)=>date?new Date(date+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'Not recorded';
 const prettyError=(error:unknown)=>error instanceof Error?error.message:'Something went wrong. Please try again.';
@@ -29,6 +31,10 @@ export default function App(){
  const [messageBody,setMessageBody]=useState('');
  const [messageTopic,setMessageTopic]=useState('');
  const [messageRecipient,setMessageRecipient]=useState('');
+ const [messageTopicFilter,setMessageTopicFilter]=useState('');
+ const [unreadMessageCount,setUnreadMessageCount]=useState(0);
+ const [memberRoleAssignments,setMemberRoleAssignments]=useState<MemberRoleAssignment[]>([]);
+ const [roleAssignmentForm,setRoleAssignmentForm]=useState({user_id:'',role_key:'instrumentalist',instrument_name:''});
  const [avatarFile,setAvatarFile]=useState<File|null>(null);
  const [memberForm,setMemberForm]=useState({display_name:'',voice_part:'',bio:'',instruments:''});
  const [musicAssignments,setMusicAssignments]=useState<MusicAssignment[]>([]);
