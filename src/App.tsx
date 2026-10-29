@@ -258,16 +258,42 @@ export default function App(){
 
  const loadCommunityData=useCallback(async()=>{
   if(!choir||!user)return;
-  const [{data:profiles,error:profileError},{data:messages,error:messageError},{data:assignments,error:assignmentError}]=await Promise.all([
-   supabase.from('rvm_profiles').select('user_id,display_name,email,approval_status,role,created_at,avatar_url,voice_part,bio,instruments').eq('approval_status','approved').order('display_name'),
-   supabase.from('rvm_messages').select('id,sender_id,recipient_id,topic,body,created_at').eq('choir_id',choir.id).order('created_at',{ascending:true}).limit(150),
-   supabase.from('rvm_music_assignments').select('id,title,event_date,assignment_type,instrument_name,assigned_user_id,musical_key,tempo_bpm,time_signature,notes,status').eq('choir_id',choir.id).order('event_date',{ascending:true})
+  const [{data:profiles,error:profileError},{data:messages,error:messageError},{data:assignments,error:assignmentError},{data:reads,error:readsError},{data:roles,error:rolesError}]=await Promise.all([
+   supabase.from('rvm_profiles').select('user_id,display_name,approval_status,role,created_at,avatar_url,voice_part,bio,instruments').eq('approval_status','approved').order('display_name'),
+   supabase.from('rvm_messages').select('id,sender_id,recipient_id,topic,body,created_at').eq('choir_id',choir.id).order('created_at',{ascending:true}).limit(250),
+   supabase.from('rvm_music_assignments').select('id,title,event_date,assignment_type,instrument_name,assigned_user_id,musical_key,tempo_bpm,time_signature,notes,status').eq('choir_id',choir.id).order('event_date',{ascending:true}),
+   supabase.from('rvm_message_reads').select('message_id').eq('user_id',user.id),
+   supabase.from('rvm_member_roles').select('id,user_id,role_key,instrument_name,created_at').eq('choir_id',choir.id).order('created_at',{ascending:false})
   ]);
   if(profileError)tell('Could not load member directory: '+profileError.message);else{setDirectoryProfiles(profiles||[]);const me=(profiles||[]).find(p=>p.user_id===user.id);if(me)setMemberForm({display_name:me.display_name||'',voice_part:me.voice_part||'',bio:me.bio||'',instruments:(me.instruments||[]).join(', ')});}
-  if(messageError)tell('Could not load messages: '+messageError.message);else setCommunityMessages((messages||[]) as ChoirMessage[]);
+  if(messageError)tell('Could not load messages: '+messageError.message);else{
+   const list=(messages||[]) as ChoirMessage[];setCommunityMessages(list);
+   if(readsError)tell('Could not load read receipts: '+readsError.message);
+   else{
+    const readIds=new Set((reads||[]).map((x:any)=>x.message_id));
+    const unread=list.filter(m=>m.sender_id!==user.id&&!readIds.has(m.id)&&(m.recipient_id===null||m.recipient_id===user.id));
+    setUnreadMessageCount(unread.length);
+    if(active==='Community & music'&&unread.length){
+     const {error:markError}=await supabase.from('rvm_message_reads').upsert(unread.map(m=>({message_id:m.id,user_id:user.id})),{onConflict:'message_id,user_id'});
+     if(!markError)setUnreadMessageCount(0);else tell('Messages loaded, but read status could not be saved.');
+    }
+   }
+  }
   if(assignmentError)tell('Could not load music assignments: '+assignmentError.message);else setMusicAssignments((assignments||[]) as MusicAssignment[]);
- },[choir,user,tell]);
+  if(rolesError)tell('Could not load role assignments: '+rolesError.message);else setMemberRoleAssignments((roles||[]) as MemberRoleAssignment[]);
+ },[choir,user,tell,active]);
  useEffect(()=>{if(active==='Community & music'&&profile?.approval_status==='approved')void loadCommunityData()},[active,profile,loadCommunityData]);
+ useEffect(()=>{
+  if(!choir||!user||profile?.approval_status!=='approved')return;
+  const channel=supabase.channel('rvm-chat-'+choir.id+'-'+user.id)
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'rvm_messages',filter:'choir_id=eq.'+choir.id},payload=>{
+    const m=payload.new as ChoirMessage;
+    if(m.sender_id!==user.id&&(m.recipient_id===null||m.recipient_id===user.id)&&active!=='Community & music')tell('You have a new choir message.');
+    void loadCommunityData();
+   }).subscribe();
+  const poll=window.setInterval(()=>void loadCommunityData(),30000);
+  return()=>{window.clearInterval(poll);void supabase.removeChannel(channel)};
+ },[choir,user,profile?.approval_status,active,loadCommunityData,tell]);
  async function saveMemberProfile(e:FormEvent){
   e.preventDefault();if(!user)return;setBusy(true);
   try{let avatarUrl=directoryProfiles.find(p=>p.user_id===user.id)?.avatar_url||'';
