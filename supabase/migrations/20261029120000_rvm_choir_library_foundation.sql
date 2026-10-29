@@ -211,3 +211,60 @@ with check (user_id = auth.uid() and exists (select 1 from public.songs s where 
 grant execute on function public.rvm_create_choir(text, text) to authenticated;
 grant execute on function public.rvm_is_choir_member(uuid) to authenticated;
 grant execute on function public.rvm_can_manage_choir(uuid) to authenticated;
+
+
+-- Private object storage for choir recordings, scores and documents.
+-- Paths must follow: <choir-uuid>/<song-uuid>/<filename>
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'rvm-choir-files',
+  'rvm-choir-files',
+  false,
+  52428800,
+  array[
+    'audio/mpeg','audio/mp4','audio/aac','audio/ogg','audio/wav','audio/x-wav',
+    'application/pdf','application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain'
+  ]
+)
+on conflict (id) do update set
+  public = false,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Choir members can read private choir files" on storage.objects;
+create policy "Choir members can read private choir files" on storage.objects
+for select to authenticated
+using (
+  bucket_id = 'rvm-choir-files'
+  and public.rvm_is_choir_member(((storage.foldername(name))[1])::uuid)
+);
+
+drop policy if exists "Choir managers can upload private choir files" on storage.objects;
+create policy "Choir managers can upload private choir files" on storage.objects
+for insert to authenticated
+with check (
+  bucket_id = 'rvm-choir-files'
+  and public.rvm_can_manage_choir(((storage.foldername(name))[1])::uuid)
+);
+
+drop policy if exists "Choir managers can update private choir files" on storage.objects;
+create policy "Choir managers can update private choir files" on storage.objects
+for update to authenticated
+using (
+  bucket_id = 'rvm-choir-files'
+  and public.rvm_can_manage_choir(((storage.foldername(name))[1])::uuid)
+)
+with check (
+  bucket_id = 'rvm-choir-files'
+  and public.rvm_can_manage_choir(((storage.foldername(name))[1])::uuid)
+);
+
+drop policy if exists "Choir managers can delete private choir files" on storage.objects;
+create policy "Choir managers can delete private choir files" on storage.objects
+for delete to authenticated
+using (
+  bucket_id = 'rvm-choir-files'
+  and public.rvm_can_manage_choir(((storage.foldername(name))[1])::uuid)
+);
