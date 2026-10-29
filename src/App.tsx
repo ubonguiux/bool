@@ -9,7 +9,9 @@ type Song = { id:string; title:string; category:string; language:string; lyrics:
 type SongFile = { id:string; storage_path:string; original_filename:string; mime_type:string; file_size_bytes:number; kind:string };
 type RvmProfile = { user_id:string; display_name:string; email:string; approval_status:'pending'|'approved'|'rejected'|'suspended'; role:string; created_at?:string };
 type RosterRow = { id:string; month_start:string; duty_type:string; title:string; member_user_id:string|null; notes:string|null; status:string };
-type AdminItem = { id:string; item_type:string; title:string; details:string; event_date:string|null; status:string };\ntype ChoirMessage = {id:string;sender_id:string;recipient_id:string|null;topic:string|null;body:string;created_at:string};\ntype MusicAssignment = {id:string;title:string;event_date:string|null;assignment_type:string;instrument_name:string;assigned_user_id:string|null;musical_key:string|null;tempo_bpm:number|null;time_signature:string|null;notes:string;status:string};
+type AdminItem = { id:string; item_type:string; title:string; details:string; event_date:string|null; status:string };
+type ChoirMessage = {id:string;sender_id:string;recipient_id:string|null;topic:string|null;body:string;created_at:string};
+type MusicAssignment = {id:string;title:string;event_date:string|null;assignment_type:string;instrument_name:string;assigned_user_id:string|null;musical_key:string|null;tempo_bpm:number|null;time_signature:string|null;notes:string;status:string};
 const categories = ['All Songs','Hymns','Praise & Worship','Special Numbers','Christmas','Anthems','Traditional'];
 const fmt=(date:string)=>date?new Date(date+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'Not recorded';
 const prettyError=(error:unknown)=>error instanceof Error?error.message:'Something went wrong. Please try again.';
