@@ -4,3 +4,42 @@
 @media(max-width:1100px){.sidebar{width:225px;flex-basis:225px}.song-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-grid{grid-template-columns:1fr}.page-content{padding-top:30px}.nav-label.category-label{margin-top:19px}}
 @media(max-width:700px){.sidebar{position:fixed;left:0;top:0;bottom:0;width:270px;transform:translateX(-102%);transition:transform .22s;box-shadow:none;overflow-y:auto}.sidebar-open{transform:translateX(0);box-shadow:15px 0 45px #0002}.close-nav{display:grid}.scrim{display:block;position:fixed;inset:0;z-index:25;border:0;background:#15221966}.mobile-menu{display:grid}.topbar{height:63px;padding:0 16px;gap:10px}.breadcrumb{margin-right:auto;gap:7px;font-size:11px}.top-actions{gap:9px}.preview-badge{font-size:9px;padding:7px 8px}.page-content{padding:27px 16px 25px}.welcome-row{align-items:flex-start;flex-direction:column;gap:15px;margin-bottom:23px}.welcome-row h1{font-size:29px}.subhead{font-size:12px}.welcome-row .primary-btn{width:100%}.stats-grid{gap:8px}.stat-card{padding:12px 10px}.stat-top{font-size:9px;gap:4px}.stat-top svg{width:15px}.stat-card>strong{font-size:23px;margin-top:12px}.stat-card>small{font-size:8px;line-height:1.4;display:block}.panel{padding:15px}.library-toolbar{margin-top:23px;flex-wrap:wrap;gap:8px}.search-box{flex-basis:100%;max-width:none}.filter-btn{min-height:36px}.results-count{margin-left:auto}.category-pills{padding:15px 0 17px;gap:6px}.category-pill{padding:8px 11px}.song-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.song-cover{height:115px;padding:9px}.cover-top>span{font-size:8px;padding:5px 6px}.favorite-btn{width:27px;height:27px}.cover-symbol{top:48px;left:13px}.cover-index{font-size:8px}.song-card-body{padding:12px 10px 10px}.song-title-button h3{font-size:12px}.song-composer{font-size:9px;margin:5px 0 12px}.song-meta span{font-size:9px;gap:5px}.song-meta svg{width:12px}.song-card-actions{gap:5px;margin-top:12px}.song-card-actions .outline-btn{font-size:9px;padding:0 6px;min-height:31px}.share-btn,.play-btn{width:30px;height:31px}.app-footer{padding:15px 16px;flex-direction:column;align-items:flex-start;gap:5px}.recent-date{display:none}.form-row{grid-template-columns:1fr}.add-modal{padding:20px}.modal-backdrop{padding:10px}.modal-card{max-height:calc(100vh - 20px)}.detail-content{padding:19px}.detail-title-row h2{font-size:22px}.detail-actions{flex-direction:column}.detail-actions button{width:100%}.detail-stats{flex-direction:column;gap:8px}.toast{bottom:12px;font-size:10px;line-height:1.4}.history-panel{padding:0 13px}.history-row{gap:10px}.history-year{font-size:10px}}
 @media(max-width:370px){.song-grid{grid-template-columns:1fr}.song-cover{height:140px}.stats-grid{grid-template-columns:1fr}.stat-card{padding:15px}.stat-card>strong{margin:8px 0 2px}.top-actions .preview-badge{display:none}}
+
+
+/* Secure sign-in and workspace onboarding */
+.auth-screen{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at top left,#e5efdd 0%,#f6f7f3 45%,#eef2e9 100%)}
+.auth-card{width:min(100%,440px);background:#fff;border:1px solid #e3e9df;border-radius:22px;padding:34px;box-shadow:0 22px 70px #243b2910}
+.auth-mark{width:50px;height:50px;margin-bottom:22px;border-radius:16px}
+.auth-card h1{font:800 29px Manrope,sans-serif;letter-spacing:-1px;color:#26382b;margin:0 0 9px}
+.auth-subtitle,.auth-card>p:not(.eyebrow-light){font-size:13px;color:#7c867d;line-height:1.7;margin:0 0 22px}
+.auth-form{display:flex;flex-direction:column;gap:16px;margin-top:22px}
+.auth-form label{display:flex;flex-direction:column;gap:8px;font-size:12px;font-weight:700;color:#4a594c}
+.auth-form input{width:100%;min-width:0;border:1px solid #dfe6dc;border-radius:9px;padding:12px;color:#334336;background:#fff;font-size:13px;outline:none}
+.auth-form input:focus{border-color:#85ae8e;box-shadow:0 0 0 3px #85ae8e20}
+.auth-input{display:flex;align-items:center;gap:9px;border:1px solid #dfe6dc;border-radius:9px;padding-left:12px;color:#8b958a}
+.auth-input:focus-within{border-color:#85ae8e;box-shadow:0 0 0 3px #85ae8e20}
+.auth-input input{border:0;box-shadow:none!important;padding-left:0}
+.auth-submit{width:100%;min-height:45px;margin-top:2px}
+.auth-message{border-radius:9px;padding:11px 12px;background:#f1f6ed;color:#4c6e4f;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.auth-links{display:flex;justify-content:space-between;gap:12px;margin-top:18px;flex-wrap:wrap}
+.auth-links button,.auth-secondary{border:0;background:none;color:#39734f;font-size:12px;font-weight:700;padding:5px 0}
+.auth-footnote{font-size:10px!important;color:#9aa39a!important;line-height:1.7!important;border-top:1px solid #eef1eb;padding-top:15px;margin:22px 0 0!important}
+.workspace-setup{width:min(100%,480px)}
+.setup-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px;background:#f1f4ee;border-radius:11px;margin:20px 0}
+.setup-tab{min-height:39px;border:0;border-radius:8px;background:transparent;color:#7a857b;font-size:12px;font-weight:700}
+.setup-tab.active{background:#fff;color:#2d6a47;box-shadow:0 1px 4px #1c35230f}
+.auth-secondary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:16px;color:#778378}
+.live-badge{background:#eaf4e5;color:#356c49}
+.live-badge span{background:#5e9c69}
+.attachment-list{margin-top:22px}
+.attachment-list h3{font:800 13px Manrope,sans-serif;color:#344237;margin:0 0 10px}
+.attachment-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #eef1ec;min-width:0}
+.attachment-row>span:nth-child(2){display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.attachment-row strong{font-size:11px;color:#344237;overflow-wrap:anywhere}
+.attachment-row small,.attachment-empty{font-size:10px;color:#89948b}
+.song-audio-player{width:100%;max-width:245px;height:34px}
+.file-picker input{font-size:11px!important;padding:8px!important}
+.file-picker small{font-size:10px;color:#879187;font-weight:400;overflow-wrap:anywhere}
+.spin{animation:rvm-spin 1.1s linear infinite}
+@keyframes rvm-spin{to{transform:rotate(360deg)}}
+@media(max-width:600px){.auth-screen{padding:16px}.auth-card{padding:25px 21px;border-radius:17px}.auth-card h1{font-size:26px}.auth-links{justify-content:center}.attachment-row{flex-wrap:wrap}.song-audio-player{max-width:100%}}
