@@ -319,3 +319,36 @@ begin
 end;
 $$;
 grant execute on function public.rvm_join_choir(text) to authenticated;
+
+
+-- Invite-code rotation is owner/admin-only. Members and librarians cannot change
+-- the invite by issuing a direct table update.
+revoke update on public.choirs from authenticated;
+grant update (name, description) on public.choirs to authenticated;
+
+create or replace function public.rvm_rotate_invite_code()
+returns text
+language plpgsql security definer
+set search_path = public, auth
+as $$
+declare target_choir_id uuid; new_code text;
+begin
+  if auth.uid() is null then
+    raise exception 'Sign in is required';
+  end if;
+  select m.choir_id into target_choir_id
+  from public.choir_members m
+  where m.user_id = auth.uid()
+    and m.role in ('owner','admin')
+  order by m.joined_at asc
+  limit 1;
+  if target_choir_id is null then
+    raise exception 'Only a choir owner or admin can rotate the invite code';
+  end if;
+  new_code := encode(gen_random_bytes(12), 'hex');
+  update public.choirs set invite_code = new_code, updated_at = now()
+  where id = target_choir_id;
+  return new_code;
+end;
+$$;
+grant execute on function public.rvm_rotate_invite_code() to authenticated;
