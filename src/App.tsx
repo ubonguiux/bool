@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { CalendarDays, Check, CircleHelp, Clock3, FileAudio, FileText, Home, Library, ListMusic, LogOut, Menu, Music2, Play, Plus, Search, Settings2, Share2, SlidersHorizontal, Sparkles, Users, X, Download, Copy, Mail, LockKeyhole, RefreshCw, ShieldCheck, ClipboardList, Shirt, Megaphone, UserCheck, Save, CalendarCheck, CheckCircle2 } from 'lucide-react';
+import { CalendarDays, Check, CircleHelp, Clock3, FileAudio, FileText, Home, Library, ListMusic, LogOut, Menu, Music2, Play, Plus, Search, Settings2, Share2, SlidersHorizontal, Sparkles, Users, X, Download, Copy, Mail, LockKeyhole, RefreshCw, ShieldCheck, ClipboardList, Shirt, Megaphone, UserCheck, Save, CalendarCheck, CheckCircle2, MessageCircle, Send, UserCircle, Guitar } from 'lucide-react';
 import { isRvmBackendConfigured, supabase } from './lib/supabase';
 
 type Choir = { id:string; name:string; invite_code:string };
@@ -9,7 +9,7 @@ type Song = { id:string; title:string; category:string; language:string; lyrics:
 type SongFile = { id:string; storage_path:string; original_filename:string; mime_type:string; file_size_bytes:number; kind:string };
 type RvmProfile = { user_id:string; display_name:string; email:string; approval_status:'pending'|'approved'|'rejected'|'suspended'; role:string; created_at?:string };
 type RosterRow = { id:string; month_start:string; duty_type:string; title:string; member_user_id:string|null; notes:string|null; status:string };
-type AdminItem = { id:string; item_type:string; title:string; details:string; event_date:string|null; status:string };
+type AdminItem = { id:string; item_type:string; title:string; details:string; event_date:string|null; status:string };\ntype ChoirMessage = {id:string;sender_id:string;recipient_id:string|null;topic:string|null;body:string;created_at:string};\ntype MusicAssignment = {id:string;title:string;event_date:string|null;assignment_type:string;instrument_name:string;assigned_user_id:string|null;musical_key:string|null;tempo_bpm:number|null;time_signature:string|null;notes:string;status:string};
 const categories = ['All Songs','Hymns','Praise & Worship','Special Numbers','Christmas','Anthems','Traditional'];
 const fmt=(date:string)=>date?new Date(date+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'Not recorded';
 const prettyError=(error:unknown)=>error instanceof Error?error.message:'Something went wrong. Please try again.';
@@ -21,7 +21,7 @@ export default function App(){
  const [profile,setProfile]=useState<RvmProfile|null>(null);
  const [profileLoading,setProfileLoading]=useState(false);
  const [siteContent,setSiteContent]=useState<Record<string,{title:string;body:string}>>({welcome_headline:{title:'A choir that stays in harmony.',body:'RVM Choir brings your music library, rehearsals, monthly duties, Sunday service planning and choir administration into one organised space.'},welcome_about:{title:'More than a song library',body:'Find lyrics, arrangements, recordings and performance history; coordinate uniform rosters, backup and press-team duty; plan choir Sundays; and keep everyone aligned between rehearsals.'},church_theme:{title:'Monthly church theme',body:'The church owner can publish this month’s theme and scripture reference here.'},church_logo:{title:'Church logo URL',body:''}});
- const [memberProfiles,setMemberProfiles]=useState<RvmProfile[]>([]);
+ const [memberProfiles,setMemberProfiles]=useState<RvmProfile[]>([]);\n const [directoryProfiles,setDirectoryProfiles]=useState<any[]>([]);\n const [communityMessages,setCommunityMessages]=useState<ChoirMessage[]>([]);\n const [messageBody,setMessageBody]=useState('');\n const [messageTopic,setMessageTopic]=useState('');\n const [messageRecipient,setMessageRecipient]=useState('');\n const [avatarFile,setAvatarFile]=useState<File|null>(null);\n const [memberForm,setMemberForm]=useState({display_name:'',voice_part:'',bio:'',instruments:''});\n const [musicAssignments,setMusicAssignments]=useState<MusicAssignment[]>([]);\n const [assignmentForm,setAssignmentForm]=useState({title:'',event_date:'',assignment_type:'service',instrument_name:'Keyboard/Piano',assigned_user_id:'',musical_key:'',tempo_bpm:'',time_signature:'4/4',notes:''});
  const [rosterRows,setRosterRows]=useState<RosterRow[]>([]);
  const [adminItems,setAdminItems]=useState<AdminItem[]>([]);
  const [rosterForm,setRosterForm]=useState({month_start:new Date().toISOString().slice(0,7)+'-01',duty_type:'uniform',title:'',member_user_id:'',notes:''});
@@ -250,7 +250,7 @@ export default function App(){
   ]);
   setRosterRows((roster||[]) as RosterRow[]);setAdminItems((items||[]) as AdminItem[]);
  },[choir,profile]);
- useEffect(()=>{if(user&&profile?.approval_status==='approved'&&choir&&['Administration','Monthly roster','Owner CMS'].includes(active))void loadAdminData()},[user,profile,choir,active,loadAdminData]);
+ useEffect(()=>{if(user&&profile?.approval_status==='approved'&&choir&&['Administration','Monthly roster','Owner CMS','Community & music'].includes(active))void loadAdminData()},[user,profile,choir,active,loadAdminData]);
 
  async function reviewMember(targetId:string,decision:'approved'|'rejected'|'suspended',assignedRole='chorister'){
   setBusy(true);
