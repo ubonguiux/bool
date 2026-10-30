@@ -7,6 +7,7 @@ import { isRvmBackendConfigured, supabase } from './lib/supabase';
 type Choir = { id:string; name:string; invite_code:string };
 type Song = { id:string; title:string; category:string; language:string; lyrics:string; composer:string; arranger:string; added:string; lastPerformed:string; event:string; favorite:boolean };
 type SongFile = { id:string; storage_path:string; original_filename:string; mime_type:string; file_size_bytes:number; kind:string };
+type SongResource = {id:string;song_id:string;resource_type:string;title:string;url:string;rights_status:string;verification_status:string;language:string|null;notes:string|null};
 type RvmProfile = { user_id:string; display_name:string; email:string; approval_status:'pending'|'approved'|'rejected'|'suspended'; role:string; created_at?:string; avatar_url?:string|null };
 type RosterRow = { id:string; month_start:string; duty_type:string; title:string; member_user_id:string|null; notes:string|null; status:string };
 type AdminItem = { id:string; item_type:string; title:string; details:string; event_date:string|null; status:string };
@@ -185,7 +186,7 @@ export default function App(){
  },[choir,tell]);
  useEffect(()=>{if(selected)void loadFiles(selected);else{setFiles([]);setSignedUrls({})}},[selected,loadFiles]);
 
- const filtered=useMemo(()=>songs.filter(s=>(category==='All Songs'||s.category===category)&&(active!=='Favorites'||s.favorite)&&(s.title+' '+s.lyrics+' '+s.category+' '+s.composer+' '+s.arranger+' '+s.event).toLowerCase().includes(query.toLowerCase())),[songs,category,active,query]);
+ const filtered=useMemo(()=>songs.filter(s=>(category==='All Songs'||s.category===category)&&(active!=='Favorites'||s.favorite)&&(alphabetLetter==='All'||s.title.trim().toUpperCase().startsWith(alphabetLetter))&&(s.title+' '+s.lyrics+' '+s.category+' '+s.composer+' '+s.arranger+' '+s.event).toLowerCase().includes(query.toLowerCase())).sort((a,b)=>a.title.localeCompare(b.title)),[songs,category,active,query,alphabetLetter]);
  const chosen=songs.find(s=>s.id===selected);
  const stats=[{label:'Songs in library',value:songs.length,icon:Library},{label:'Categories',value:new Set(songs.map(s=>s.category)).size,icon:ListMusic},{label:'Recently performed',value:songs.filter(s=>s.lastPerformed&&Date.now()-new Date(s.lastPerformed).getTime()<30*86400000).length,icon:CalendarDays}];
 
