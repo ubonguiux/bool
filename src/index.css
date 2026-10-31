@@ -399,3 +399,60 @@ body{background:var(--app-bg);color:var(--text-main)}
 .online-song-finder{width:min(720px,calc(100vw - 28px));max-height:88vh;overflow:auto;padding:24px}.online-song-finder .resource-heading{align-items:flex-start;gap:16px}.online-song-finder h2{margin:3px 0 6px}.online-song-finder .resource-heading p{margin:0;color:var(--muted);font-size:13px}.online-song-search-form{display:flex;flex-wrap:wrap;gap:9px;margin:20px 0 10px}.online-song-search-form input{flex:1 1 230px;min-width:0;border:1px solid var(--line);border-radius:11px;background:var(--paper);color:var(--ink);padding:12px 14px}.online-song-search-form button{display:inline-flex;align-items:center;justify-content:center;gap:7px}.voice-search-notice{padding:10px 12px;border-radius:10px;background:var(--lime);color:var(--ink);font-size:13px}.online-search-note{font-size:12px;line-height:1.55;color:var(--muted);margin:12px 0}.music-platform-searches{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:9px;margin:14px 0 18px}.platform-search-link{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 13px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);text-decoration:none;font-weight:700;font-size:13px;transition:transform .15s,border-color .15s}.platform-search-link:hover{transform:translateY(-1px);border-color:var(--green)}.platform-search-link span{color:var(--muted);font-size:11px;font-weight:600;white-space:nowrap}@media(max-width:520px){.online-song-finder{padding:17px}.online-song-search-form{display:grid;grid-template-columns:1fr 1fr}.online-song-search-form input{grid-column:1/-1}.online-song-search-form .primary-btn{grid-column:1/-1}}
 
 .song-history-collections{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:18px}.song-history-collections>section{border:1px solid var(--line);border-radius:13px;padding:13px;min-width:0}.song-history-collections h3{margin:0 0 10px;font-size:14px}.song-history-item{display:flex;align-items:center;gap:7px;border-top:1px solid var(--line);padding:7px 0}.song-history-item button:first-child{flex:1;min-width:0;text-align:left;overflow-wrap:anywhere;background:transparent;border:0;color:var(--ink);font-size:12px;padding:4px}.song-history-item button:last-child{display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);padding:6px}.collection-create-row{display:flex;gap:7px}.collection-create-row input{min-width:0;flex:1;border:1px solid var(--line);border-radius:9px;padding:9px;background:var(--paper);color:var(--ink)}
+
+
+/* Interactive welcome-page guide and problem/solution story */
+.welcome-guide-section,.challenge-section{width:min(1120px,calc(100% - 48px));margin:clamp(54px,8vw,100px) auto}
+.welcome-guide-heading{max-width:700px;margin:0 auto 28px;text-align:center}
+.welcome-guide-heading .public-kicker{justify-content:center}
+.welcome-guide-heading h2{font:800 clamp(27px,4vw,42px) Manrope,sans-serif;letter-spacing:-1.4px;line-height:1.12;color:var(--text-main,#20271f);margin:12px 0}
+.welcome-guide-heading>p{font-size:15px;line-height:1.7;color:var(--text-muted,#748075);margin:0 auto;max-width:620px}
+.welcome-guide-layout{display:grid;grid-template-columns:minmax(250px,.78fr) minmax(0,1.22fr);gap:18px;align-items:stretch}
+.guide-step-list{display:grid;gap:8px;align-content:start}
+.guide-step-tab{width:100%;min-height:72px;display:grid;grid-template-columns:40px minmax(0,1fr) 20px;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border-main,#e2e8df);border-radius:15px;background:var(--surface,#fff);color:var(--text-main,#20271f);text-align:left;transition:border-color .18s,background .18s,transform .18s}
+.guide-step-tab:hover{transform:translateX(2px);border-color:#9fbea1}
+.guide-step-tab.is-current{border-color:#79a987;background:#edf5e9;box-shadow:inset 3px 0 #236b4a}
+.guide-step-number{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:var(--surface-soft,#f0f4ed);color:var(--green,#236b4a);font-size:12px;font-weight:800}
+.guide-step-tab strong,.guide-step-tab small{display:block;min-width:0}
+.guide-step-tab strong{font-size:13px;line-height:1.35}
+.guide-step-tab small{margin-top:4px;color:var(--text-muted,#748075);font-size:9px;font-weight:800;letter-spacing:1px}
+.guide-step-arrow{font-size:22px;color:var(--text-muted,#748075);text-align:right}
+.guide-step-detail{min-width:0;display:flex;flex-direction:column;padding:clamp(20px,3vw,32px);border:1px solid var(--border-main,#e2e8df);border-radius:22px;background:var(--surface,#fff);color:var(--text-main,#20271f);box-shadow:0 12px 34px rgba(24,52,31,.06)}
+.guide-detail-top{display:flex;justify-content:space-between;gap:12px;color:var(--green,#236b4a);font-size:10px;font-weight:850;letter-spacing:1.1px}
+.guide-progress{height:5px;margin:14px 0 25px;border-radius:99px;background:var(--surface-soft,#edf1e9);overflow:hidden}
+.guide-progress span{display:block;height:100%;border-radius:99px;background:#5c9569;transition:width .2s ease}
+.guide-step-detail h3{font:800 clamp(23px,3vw,32px) Manrope,sans-serif;letter-spacing:-.8px;margin:0 0 12px}
+.guide-step-detail>p{font-size:14px;line-height:1.8;color:var(--text-muted,#748075);margin:0 0 20px}
+.guide-tip{margin-top:auto;padding:14px 16px;border-radius:13px;background:var(--surface-soft,#f1f5ed);border:1px solid var(--border-main,#e2e8df)}
+.guide-tip>span,.challenge-answer>span{font-size:9px;letter-spacing:1.2px;font-weight:850;color:var(--green,#236b4a)}
+.guide-tip p{margin:6px 0 0;color:var(--text-main,#20271f);font-size:12px;line-height:1.6}
+.guide-detail-actions{display:flex;justify-content:space-between;gap:10px;margin-top:22px}
+.guide-detail-actions button{min-height:42px}
+.guide-cta{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:20px 22px;border-radius:17px;background:#203f2d;color:#fff}
+.guide-cta strong,.guide-cta span{display:block}
+.guide-cta strong{font:800 16px Manrope,sans-serif}
+.guide-cta span{margin-top:5px;color:#d3e1d5;font-size:12px;line-height:1.5}
+.guide-cta .primary-btn{flex:0 0 auto;background:#d9efb3;color:#203f2d;border:0}
+.challenge-section{padding-top:12px}
+.challenge-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.challenge-card{min-width:0;border:1px solid var(--border-main,#e2e8df);border-radius:16px;background:var(--surface,#fff);overflow:hidden;transition:border-color .18s,box-shadow .18s}
+.challenge-card[open]{border-color:#91b79a;box-shadow:0 8px 24px rgba(24,52,31,.06)}
+.challenge-card summary{min-height:100px;display:grid;grid-template-columns:42px minmax(0,1fr) 24px;align-items:center;gap:12px;padding:17px;list-style:none;cursor:pointer}
+.challenge-card summary::-webkit-details-marker{display:none}
+.challenge-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:var(--surface-soft,#eef4e9);color:var(--green,#236b4a);font-size:22px;font-weight:800}
+.challenge-card summary strong,.challenge-card summary small{display:block}
+.challenge-card summary strong{font:750 14px Manrope,sans-serif;color:var(--text-main,#20271f);line-height:1.4}
+.challenge-card summary small{margin-top:5px;font-size:11px;line-height:1.5;color:var(--text-muted,#748075)}
+.challenge-card summary>b{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:var(--surface-soft,#eef4e9);color:var(--green,#236b4a);font-size:18px;font-weight:500}
+.challenge-card[open] summary>b{transform:rotate(45deg)}
+.challenge-answer{padding:0 18px 18px 71px}
+.challenge-answer p{margin:6px 0 0;color:var(--text-muted,#748075);font-size:12px;line-height:1.7}
+.challenge-bottom-note{display:grid;gap:6px;margin-top:20px;padding:21px;border-radius:16px;background:var(--surface-soft,#eef4e9);text-align:center}
+.challenge-bottom-note strong{font:800 17px Manrope,sans-serif;color:var(--text-main,#20271f)}
+.challenge-bottom-note span{font-size:12px;line-height:1.6;color:var(--text-muted,#748075)}
+[data-theme="dark"] .guide-step-tab.is-current{background:#25382b;border-color:#52795e}
+[data-theme="dark"] .guide-cta{background:#263b2d}
+[data-theme="dark"] .guide-cta .primary-btn{background:#d9efb3;color:#203f2d}
+@media(max-width:760px){.welcome-guide-section,.challenge-section{width:min(100% - 28px,620px);margin:56px auto}.welcome-guide-layout{grid-template-columns:1fr}.guide-step-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.guide-step-tab{grid-template-columns:32px minmax(0,1fr);min-height:68px;padding:9px;gap:8px}.guide-step-number{width:30px;height:30px}.guide-step-tab strong{font-size:11px}.guide-step-tab small{font-size:8px}.guide-step-arrow{display:none}.guide-step-detail{min-height:330px}.challenge-grid{grid-template-columns:1fr}.guide-cta{align-items:flex-start;flex-direction:column}.guide-cta .primary-btn{width:100%;justify-content:center}}
+@media(max-width:390px){.welcome-guide-section,.challenge-section{width:calc(100% - 22px)}.guide-step-list{grid-template-columns:1fr}.guide-step-tab{grid-template-columns:36px minmax(0,1fr) 18px}.guide-step-arrow{display:block}.guide-detail-actions{flex-wrap:wrap}.guide-detail-actions button{flex:1}.challenge-card summary{padding:14px;gap:9px}.challenge-answer{padding:0 14px 15px 65px}}
+@media(prefers-reduced-motion:reduce){.guide-step-tab,.guide-progress span,.challenge-card{transition:none}}
