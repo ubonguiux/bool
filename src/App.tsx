@@ -88,7 +88,6 @@ export default function App(){
  const [songSearchHistory,setSongSearchHistory]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('rvm-song-search-history')||'[]')}catch{return []}});
  const [songCollections,setSongCollections]=useState<Record<string,string[]>>(()=>{try{return JSON.parse(localStorage.getItem('rvm-song-collections')||'{"Choir favourites":[],"To learn":[],"For Sunday service":[]}')}catch{return {"Choir favourites":[],"To learn":[],"For Sunday service":[]}}});
  const [collectionName,setCollectionName]=useState('Choir favourites');
- const [collectionSong,setCollectionSong]=useState('');
  const [category,setCategory]=useState('All Songs');
  const [active,setActive]=useState('Library');
  const [theme,setTheme]=useState<'light'|'dark'>(()=>{try{return localStorage.getItem('rvm-choir-theme')==='dark'?'dark':'light'}catch{return 'light'}});
