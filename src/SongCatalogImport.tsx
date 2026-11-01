@@ -21,13 +21,15 @@ export default function SongCatalogImport({choirId,onClose,onNotice,onImported}:
   const titles=rows.map(r=>val(r,['title','songtitle','name']).slice(0,240));
   const uniqueRows:Row[]=[];const seen=new Set<string>();
   for(let i=0;i<rows.length;i++){const k=titles[i].toLowerCase().trim();if(!k||seen.has(k)){skipped++;continue;}seen.add(k);uniqueRows.push(rows[i]);}
-  const existing=new Set<string>();for(let start=0;start<uniqueRows.length;start+=500){const part=uniqueRows.slice(start,start+500).map(r=>val(r,['title','songtitle','name']));const {data,error}=await supabase.from('songs').select('title').eq('choir_id',choirId).is('archived_at',null).in('title',part);if(error)throw error;for(const s of data||[])existing.add(s.title.toLowerCase().trim());}
-  const payload=uniqueRows.filter(r=>!existing.has(val(r,['title','songtitle','name']).toLowerCase().trim())).map(r=>({
+  const existing=new Set<string>();for(let offset=0;;offset+=500){const {data,error}=await supabase.from('songs').select('title').eq('choir_id',choirId).is('archived_at',null).order('title').range(offset,offset+499);if(error)throw error;for(const song of data||[])existing.add(song.title.toLowerCase().trim());if(!data||data.length<500)break;}
+  const freshRows=uniqueRows.filter(r=>!existing.has(val(r,['title','songtitle','name']).toLowerCase().trim()));
+  const dbDuplicates=uniqueRows.length-freshRows.length;
+  const payload=freshRows.map(r=>({
    choir_id:choirId,title:val(r,['title','songtitle','name']).slice(0,240),
    category:val(r,['category','genre'])||'Uncategorised',language:val(r,['language'])||'English',
    composer:val(r,['composer','lyricist','writer'])||null,arranger:val(r,['arranger','arrangement'])||null,
    lyrics:val(r,['lyrics','lyrictext'])||null,musical_key:val(r,['musical_key','key','keysignature'])||null,
-   tempo_bpm:val(r,['tempo_bpm','bpm','tempo'])?Number(val(r,['tempo_bpm','bpm','tempo'])):null,
+   tempo_bpm:val(r,['tempo_bpm','bpm','tempo'])&&Number.isFinite(Number(val(r,['tempo_bpm','bpm','tempo'])))?Number(val(r,['tempo_bpm','bpm','tempo'])):null,
    time_signature:val(r,['time_signature','timesignature'])||null,
    vocal_parts:val(r,['vocal_parts','voices','arrangementparts']).split(/[;,|]/).map(x=>x.trim()).filter(Boolean),
    lyrics_source_url:val(r,['lyrics_source_url','lyricssource','lyricurl'])||null,
@@ -38,7 +40,7 @@ export default function SongCatalogImport({choirId,onClose,onNotice,onImported}:
    source_notes:'Imported from '+(file?.name||'CSV')+'; review lyrics, source, musical key, and rights before performance.',
   }));
   for(let start=0;start<payload.length;start+=100){const {error}=await supabase.from('songs').insert(payload.slice(start,start+100));if(error)throw error;added+=Math.min(100,payload.length-start);setProgress('Imported '+added+' of '+payload.length+' songs…');}
-  await onImported();onNotice('Song import complete: '+added+' added; '+(skipped+existing.size)+' duplicate titles skipped. Imported records remain unverified until reviewed.');onClose();
+  await onImported();onNotice('Song import complete: '+added+' added; '+(skipped+dbDuplicates)+' duplicate titles skipped. Imported records remain unverified until reviewed.');onClose();
  }catch(e){onNotice('Import stopped after '+added+' songs: '+(e instanceof Error?e.message:'database error')+'. You can remove duplicates and retry; imported rows are not rolled back automatically.');}finally{setBusy(false);setProgress('');}};
  const downloadTemplate=()=>{const blob=new Blob([template],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='rvm-choir-song-import-template.csv';a.click();URL.revokeObjectURL(url);};
  return <div className="modal-backdrop" onClick={onClose}><section className="modal-card add-modal" onClick={e=>e.stopPropagation()}><div className="modal-heading"><div><p className="eyebrow-light">LIBRARY MANAGEMENT</p><h2>Import song catalogue</h2><p>Bulk import song metadata from CSV. Duplicate titles are skipped.</p></div><button className="icon-btn" onClick={onClose} aria-label="Close"><X size={20}/></button></div><div className="panel" style={{padding:16,marginBottom:16}}><p><strong>Important:</strong> Only import lyrics, recordings and scores you have permission to store. Musical keys and source links are marked unverified until checked by a librarian.</p><button type="button" className="outline-btn" onClick={downloadTemplate}><FileSpreadsheet size={16}/> Download CSV template</button></div><label className="file-picker"><Upload size={17}/> Select CSV file<input type="file" accept=".csv,text/csv" onChange={e=>void choose(e.target.files?.[0]||null)}/><small>{file?file.name:'CSV up to 15 MB · Suggested batches up to 2,500 songs'}</small></label>{rows.length>0&&<div className="panel" style={{padding:16,marginTop:16}}><strong><CheckCircle2 size={16} style={{display:'inline',verticalAlign:'middle'}}/> {rows.length.toLocaleString()} song rows ready</strong><p>Preview: {rows.slice(0,5).map(r=>val(r,['title','songtitle','name'])).join(' · ')}</p></div>}{progress&&<p role="status">{progress}</p>}<div className="modal-actions"><button type="button" className="outline-btn" onClick={onClose}>Cancel</button><button type="button" className="primary-btn" disabled={busy||!rows.length} onClick={()=>void importRows()}>{busy?'Importing…':'Import '+rows.length+' songs'}</button></div></section></div>;
