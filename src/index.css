@@ -456,3 +456,18 @@ body{background:var(--app-bg);color:var(--text-main)}
 @media(max-width:760px){.welcome-guide-section,.challenge-section{width:min(100% - 28px,620px);margin:56px auto}.welcome-guide-layout{grid-template-columns:1fr}.guide-step-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.guide-step-tab{grid-template-columns:32px minmax(0,1fr);min-height:68px;padding:9px;gap:8px}.guide-step-number{width:30px;height:30px}.guide-step-tab strong{font-size:11px}.guide-step-tab small{font-size:8px}.guide-step-arrow{display:none}.guide-step-detail{min-height:330px}.challenge-grid{grid-template-columns:1fr}.guide-cta{align-items:flex-start;flex-direction:column}.guide-cta .primary-btn{width:100%;justify-content:center}}
 @media(max-width:390px){.welcome-guide-section,.challenge-section{width:calc(100% - 22px)}.guide-step-list{grid-template-columns:1fr}.guide-step-tab{grid-template-columns:36px minmax(0,1fr) 18px}.guide-step-arrow{display:block}.guide-detail-actions{flex-wrap:wrap}.guide-detail-actions button{flex:1}.challenge-card summary{padding:14px;gap:9px}.challenge-answer{padding:0 14px 15px 65px}}
 @media(prefers-reduced-motion:reduce){.guide-step-tab,.guide-progress span,.challenge-card{transition:none}}
+
+/* Keep the song-library search field transparent in dark mode; only its placeholder is muted ash. */
+[data-theme="dark"] .library-toolbar .search-box input,
+[data-theme="dark"] .library-toolbar .search-box input:focus {
+  background: transparent !important;
+  color: var(--text-main, #edf4ee);
+}
+.library-toolbar .search-box input::placeholder {
+  color: #a6ada8;
+  opacity: 1;
+}
+[data-theme="dark"] .library-toolbar .search-box input::placeholder {
+  color: #a6ada8;
+  opacity: 1;
+}
