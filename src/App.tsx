@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { CalendarDays, Check, CircleHelp, Clock3, FileAudio, FileText, Home, Library, ListMusic, LogOut, Menu, Music2, Play, Plus, Search, Settings2, Share2, SlidersHorizontal, Sparkles, Users, X, Download, Copy, Mail, LockKeyhole, RefreshCw } from 'lucide-react';
+import { CalendarDays, Check, CircleHelp, Clock3, FileAudio, FileText, Home, Library, ListMusic, LogOut, Menu, Music2, Play, Plus, Search, Settings2, Share2, SlidersHorizontal, Sparkles, Users, X, Download, Upload, Copy, Mail, LockKeyhole, RefreshCw } from 'lucide-react';
 import { isRvmBackendConfigured, supabase } from './lib/supabase';
 import SongCatalogImport from './SongCatalogImport';
 
